@@ -1,41 +1,53 @@
-## Todo
 
-- [ ] Address these vulkan issues:
-    - [ ] Run your program now with optimization enabled (e.g. Release mode with the -O3 compiler flag for GCC`)
+# Current development notes
+
+Graphics engine:
+
+- [ ] Onboard onto QT
+- [ ] Move camera information into a class
+- [ ] More structured / documented API, less manual work with creating and deleting
+
+Painting application:
+
+- [ ] (Bug) Window resizing requires two draw calls to fix, not all frames are updated
+
+- [ ] Tiling with dirty flags 
+- [ ] Layer visibility 
+- [ ] Configure scissors for better optimization
+
+- [ ] Tooling system
+    - [ ] Brush tool
+        - [ ] Brush functions / mouse down and released
+    - [ ] Zoom tool
+        - [ ] GPU acceleration with zooming in and out ...   
     
-- [ ] Generalize vulkan features
-    - [ ] Onboard onto QT
-    
-    - [ ] Move camera information into a class
-    - [ ] More API-like, external applications that use this should not be exposed to any vulkan?
-        - [ ] Potentially wrappers around everything 
+# Long term features
 
-- [ ] Tiling for digital painting with dirty flags 
-    
-- [ ] (Bug) Window resizing requires two draw calls to fix  
- 
-- [ ] Application level
-    - [ ] Layer visibility 
-    - [ ] Configure scissors
-    - [ ] Brush functions / mouse down and released
-    - [ ] Cut tool + transforms
-    
-- [ ] Make another application for the spinning model, keep engine general enough to support both functions 
-    
-- [ ] Get rid of a lot of the configs for inputs instead 
+## Priority features
 
+- PSD compatibility 
+- Fast/responsive, customizable brush engine
+    - Mixer brushes / blending
+    - Stabilization
+    - Textures
+    - Brush node system ?
+- Color Management
+    - ICC profile support
+    - CMYK preview (even if you don’t edit CMYK)
+    - Soft proofing
+    - Wide-gamut handling (Display P3, Adobe RGB)
+    - 16-bit + 32-bit float modes
+- Layer management system (200+ layers)
+- Autosave and versioning system
+    - Compare versions
+    - Rollback, combine, cherry pick, etc.
+- Customizable UI
+- Common tools
+    - Liquify, lasso, transform, etc.
 
+## Secondary features
 
-
-
-**General build:**
-- `./scripts/compile.sh` to compile (not meant for Xcode)
-- `./scripts/compile_shaders.sh` to compile shaders to resources dir
-- `./scripts/run.sh` to run program
-
-For Xcode, run `cmake -G Xcode ..` in the build directory and open Xcode project file.
-- For macOS, set macOS bool in `GraphicsConfig` in `config.h`
-
-Xcode specific instructions:
-- In `Build Phases`, add compiled files into `Compile Sources`, and then shaders, textures, models, etc. into a `Copy Bundle Resource`
-- In `Build Settings`, add dir paths to `Header Search Paths`
+- Plugin support 
+- Cross platform
+- Collab / cloud
+- AI features ?

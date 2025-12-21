@@ -1,3 +1,5 @@
+# Temp: Code for graphics application
+
 // graphics application
 
 GraphicsApplication::GraphicsApplication() : Application() { // constructor

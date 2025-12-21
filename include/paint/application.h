@@ -18,7 +18,8 @@ class Application {
 private:
     
     Graphics graphics;
-
+    
+    // tiling instead
     static constexpr uint32_t CANVAS_WIDTH = 1024;
     static constexpr uint32_t CANVAS_HEIGHT = 1024;
     
@@ -55,13 +56,14 @@ private:
     
     InputSystem inputSystem;
     
+    void draw();
+    
 public:
     
     Application();
     ~Application();
 
     void init();
-    void draw();
     void run();
     void cleanup();
 
