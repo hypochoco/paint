@@ -1,6 +1,6 @@
 #version 450
 
-const int NUM_TEXTURES = 4;
+const int NUM_TEXTURES = 16;
 
 layout(binding = 2) uniform sampler2D textures[NUM_TEXTURES]; // NUM_TEXTURES
 

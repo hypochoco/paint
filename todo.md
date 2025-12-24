@@ -6,6 +6,28 @@
 
 
 
+- [ ] tool system, selected tool, function interface
+
+- [ ] partial tiling, support any canvas size 
+
+- [ ] brush in between tiles
+
+- [ ] tiling jobs / dirty flag rendering 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -19,7 +41,7 @@
 Graphics engine:
 
 - [ ] Onboard onto QT
-- [ ] Move camera information into a class
+- [ ] Move camera information into a struct, less boilerplate
 - [ ] More structured / documented API, less manual work with creating and deleting
 
 Painting application:
