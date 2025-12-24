@@ -1,4 +1,11 @@
 
+//
+//  main.cpp
+//  engine
+//
+//  Created by Daniel Cho on 9/30/25.
+//
+
 #include <iostream>
 
 #include "paint/application.h"

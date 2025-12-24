@@ -1,6 +1,21 @@
 
 # Current development notes
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 Graphics engine:
 
 - [ ] Onboard onto QT

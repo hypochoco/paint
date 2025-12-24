@@ -26,18 +26,10 @@ private:
     float depth;
     float brushSize;
     
-    VkImage brushTextureImage;
-    VkDeviceMemory brushTextureImageMemory;
-    VkImageView brushTextureImageView;
-    
-    VkImage layerTextureImage;
-    VkDeviceMemory layerTextureImageMemory;
-    VkImageView layerTextureImageView;
-    
-    VkImage canvasTextureImage;
-    VkDeviceMemory canvasTextureImageMemory;
-    VkImageView canvasTextureImageView;
-    
+    uint32_t canvasIndex;
+    uint32_t brushIndex;
+    uint32_t layerIndex;
+        
     VkRenderPass brushRenderPass;
     VkFramebuffer brushFrameBuffer;
     VkDescriptorSetLayout brushDescriptorSetLayout;

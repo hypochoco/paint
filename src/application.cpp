@@ -24,72 +24,51 @@ void Application::init() {
     
     graphics.initWindow(); // todo: configurables here ? window size
     graphics.initVulkan();
-        
-    // brush
-    
-    graphics.loadTexture("brush.png",
-                         brushTextureImage,
-                         brushTextureImageMemory,
-                         brushTextureImageView,
-                         VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT
-                         | VK_IMAGE_USAGE_TRANSFER_SRC_BIT
-                         | VK_IMAGE_USAGE_TRANSFER_DST_BIT
-                         | VK_IMAGE_USAGE_SAMPLED_BIT,
-                         1);
-    
-    graphics.transitionImageLayout(brushTextureImage,
-                                   VK_FORMAT_R8G8B8A8_SRGB,
-                                   VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                                   VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                                   1);
-        
-    // layer
-    
-    graphics.createTexture(CANVAS_WIDTH,
-                           CANVAS_HEIGHT,
-                           layerTextureImage,
-                           layerTextureImageMemory,
-                           layerTextureImageView,
-                           VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT
-                           | VK_IMAGE_USAGE_TRANSFER_SRC_BIT
-                           | VK_IMAGE_USAGE_TRANSFER_DST_BIT
-                           | VK_IMAGE_USAGE_SAMPLED_BIT,
-                           1);
-    
-    graphics.transitionImageLayout(layerTextureImage,
-                                   VK_FORMAT_R8G8B8A8_SRGB,
-                                   VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                                   VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-                                   1);
     
     // canvas texture
             
+    canvasIndex = (uint32_t)graphics.textureImages.size();
     graphics.createTexture(CANVAS_WIDTH,
                            CANVAS_HEIGHT,
-                           canvasTextureImage,
-                           canvasTextureImageMemory,
-                           canvasTextureImageView,
+                           VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT
+                           | VK_IMAGE_USAGE_TRANSFER_SRC_BIT
+                           | VK_IMAGE_USAGE_TRANSFER_DST_BIT
+                           | VK_IMAGE_USAGE_SAMPLED_BIT,
+                           1);
+
+    canvasIndex = (uint32_t)graphics.textureImages.size();
+    graphics.createTexture(CANVAS_WIDTH,
+                           CANVAS_HEIGHT,
                            VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT
                            | VK_IMAGE_USAGE_TRANSFER_SRC_BIT
                            | VK_IMAGE_USAGE_TRANSFER_DST_BIT
                            | VK_IMAGE_USAGE_SAMPLED_BIT,
                            1);
     
-    graphics.transitionImageLayout(canvasTextureImage,
-                                   VK_FORMAT_R8G8B8A8_SRGB,
-                                   VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                                   VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                                   1);
+    // brush
     
-    graphics.textureImages.push_back(canvasTextureImage);
-    graphics.textureImageMemories.push_back(canvasTextureImageMemory);
-    graphics.textureImageViews.push_back(canvasTextureImageView);
+    brushIndex = (uint32_t)graphics.textureImages.size();
+    graphics.loadTexture("brush.png",
+                         VK_IMAGE_USAGE_TRANSFER_SRC_BIT
+                         | VK_IMAGE_USAGE_TRANSFER_DST_BIT
+                         | VK_IMAGE_USAGE_SAMPLED_BIT,
+                         1);
+            
+    // layer
     
+    layerIndex = (uint32_t)graphics.textureImages.size();
+    graphics.createTexture(CANVAS_WIDTH,
+                           CANVAS_HEIGHT,
+                           VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT
+                           | VK_IMAGE_USAGE_TRANSFER_SRC_BIT
+                           | VK_IMAGE_USAGE_TRANSFER_DST_BIT
+                           | VK_IMAGE_USAGE_SAMPLED_BIT,
+                           1);
+        
     // load canvas quad
     
-    auto canvasQuad = Graphics::loadCanvasQuad();
-    graphics.pushModel(canvasQuad); // todo: which objs to draw, with which materials
-    
+    graphics.loadQuad();
+        
     // finish rest of vulkan setup
     
     graphics.initRender("vert.spv", "frag.spv"); // vertex buffers + swap chain pipeline
@@ -105,15 +84,13 @@ void Application::init() {
             
     graphics.createFramebuffer(brushFrameBuffer,
                                brushRenderPass,
-                               layerTextureImageView,
+                               graphics.textureImageViews[layerIndex],
                                (int) CANVAS_WIDTH,
                                (int) CANVAS_HEIGHT);
     
     graphics.createDescriptorSetLayout(brushDescriptorSetLayout);
-    
     graphics.createDescriptorPool(brushDescriptorPool);
-    
-    graphics.createDescriptorSets(brushTextureImageView,
+    graphics.createDescriptorSets(graphics.textureImageViews[brushIndex],
                                   brushDescriptorSets,
                                   brushDescriptorSetLayout,
                                   brushDescriptorPool);
@@ -166,15 +143,13 @@ void Application::init() {
             
     graphics.createFramebuffer(layerFrameBuffer,
                                layerRenderPass,
-                               canvasTextureImageView,
+                               graphics.textureImageViews[canvasIndex],
                                (int) CANVAS_WIDTH,
                                (int) CANVAS_HEIGHT);
     
     graphics.createDescriptorSetLayout(layerDescriptorSetLayout);
-    
     graphics.createDescriptorPool(layerDescriptorPool);
-    
-    graphics.createDescriptorSets(layerTextureImageView,
+    graphics.createDescriptorSets(graphics.textureImageViews[layerIndex],
                                   layerDescriptorSets,
                                   layerDescriptorSetLayout,
                                   layerDescriptorPool);
@@ -224,15 +199,25 @@ void Application::init() {
                                       0.1f, // near
                                       10.0f); // far
     proj[1][1] *= -1; // strange projection fix
-
-    std::vector<InstanceSSBO> instances(1);
-    instances[0].model = glm::mat4(1.0f);
     
     for (uint32_t i = 0; i < (uint32_t) graphics.MAX_FRAMES_IN_FLIGHT; i++) {
         graphics.updateGlobalUBO(i, view, proj);
-        graphics.updateInstanceSSBOs(i, instances);
     }
+
+    // canvas instances
     
+    graphics.materials.emplace_back( Material { 0 } );
+    graphics.materials.emplace_back( Material { 1 } );
+    
+    graphics.addDrawJob(0, 0, 2, std::vector<glm::mat4> {
+        glm::mat4(1.0f),
+        glm::translate(glm::mat4(1.0f), glm::vec3(-2.0f, 0.0f, 0.0f))
+    });
+        
+    for (uint32_t i = 0; i < (uint32_t) graphics.MAX_FRAMES_IN_FLIGHT; i++) {
+        graphics.copyInstanceToBuffer(i);
+    }
+        
 }
 
 void Application::draw() {
@@ -265,64 +250,34 @@ void Application::draw() {
     pc.size[0] = brushSize; // translate to px size
     pc.size[1] = brushSize;
     
-    graphics.draw(commandBuffer,
-                  brushRenderPass,
-                  brushFrameBuffer,
-                  CANVAS_WIDTH,
-                  CANVAS_HEIGHT,
-                  brushPipeline,
-                  CANVAS_WIDTH,
-                  CANVAS_HEIGHT,
-                  CANVAS_WIDTH, // could be optimized
-                  CANVAS_HEIGHT, // could be optimized
-                  brushPipelineLayout,
-                  brushDescriptorSets,
-                  pc);
+    graphics.recordCommandBuffer(commandBuffer,
+                                 brushRenderPass,
+                                 brushFrameBuffer,
+                                 CANVAS_WIDTH,
+                                 CANVAS_HEIGHT,
+                                 brushPipeline,
+                                 CANVAS_WIDTH,
+                                 CANVAS_HEIGHT,
+                                 CANVAS_WIDTH, // todo: could be optimized
+                                 CANVAS_HEIGHT, // todo: could be optimized
+                                 brushPipelineLayout,
+                                 brushDescriptorSets,
+                                 pc);
         
     // layer to canvas
-    
-    // todo: minimize the number of image transitions
-    
-    graphics.transitionImageLayout(commandBuffer,
-                                   layerTextureImage,
-                                   VK_FORMAT_R8G8B8A8_SRGB,
-                                   VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-                                   VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                                   1);
-    
-    graphics.transitionImageLayout(commandBuffer,
-                                   canvasTextureImage,
-                                   VK_FORMAT_R8G8B8A8_SRGB,
-                                   VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                                   VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-                                   1);
 
-    graphics.draw(commandBuffer,
-                  layerRenderPass,
-                  layerFrameBuffer,
-                  CANVAS_WIDTH,
-                  CANVAS_HEIGHT,
-                  layerPipeline,
-                  CANVAS_WIDTH,
-                  CANVAS_HEIGHT,
-                  CANVAS_WIDTH,
-                  CANVAS_HEIGHT,
-                  layerPipelineLayout,
-                  layerDescriptorSets);
-    
-    graphics.transitionImageLayout(commandBuffer,
-                                   layerTextureImage,
-                                   VK_FORMAT_R8G8B8A8_SRGB,
-                                   VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                                   VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-                                   1);
-
-    graphics.transitionImageLayout(commandBuffer,
-                                   canvasTextureImage,
-                                   VK_FORMAT_R8G8B8A8_SRGB,
-                                   VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-                                   VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                                   1);
+    graphics.recordCommandBuffer(commandBuffer,
+                                 layerRenderPass,
+                                 layerFrameBuffer,
+                                 CANVAS_WIDTH,
+                                 CANVAS_HEIGHT,
+                                 layerPipeline,
+                                 CANVAS_WIDTH,
+                                 CANVAS_HEIGHT,
+                                 CANVAS_WIDTH,
+                                 CANVAS_HEIGHT,
+                                 layerPipelineLayout,
+                                 layerDescriptorSets);
     
     // canvas to swapchain
     
@@ -373,12 +328,12 @@ void Application::run() {
             draw();
             inputSystem.reset();
         } else if (inputSystem.leftBracketPressed) {
-            brushSize += 0.01f;
-            inputSystem.reset();
-        } else if (inputSystem.rightBracketPressed) {
             if (brushSize > 0.0f) {
                 brushSize -= 0.01f;
             }
+            inputSystem.reset();
+        } else if (inputSystem.rightBracketPressed) {
+            brushSize += 0.01f;
             inputSystem.reset();
         }
     }
@@ -407,15 +362,7 @@ void Application::cleanup() {
     
     vkDestroyDescriptorPool(graphics.device, brushDescriptorPool, nullptr);
     vkDestroyDescriptorPool(graphics.device, layerDescriptorPool, nullptr);
-    
-    vkDestroyImageView(graphics.device, brushTextureImageView, nullptr);
-    vkDestroyImage(graphics.device, brushTextureImage, nullptr);
-    vkFreeMemory(graphics.device, brushTextureImageMemory, nullptr);
-
-    vkDestroyImageView(graphics.device, layerTextureImageView, nullptr);
-    vkDestroyImage(graphics.device, layerTextureImage, nullptr);
-    vkFreeMemory(graphics.device, layerTextureImageMemory, nullptr);
-    
+        
     vkDestroyDescriptorSetLayout(graphics.device, brushDescriptorSetLayout, nullptr);
     vkDestroyDescriptorSetLayout(graphics.device, layerDescriptorSetLayout, nullptr);
     

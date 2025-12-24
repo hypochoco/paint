@@ -15,13 +15,14 @@ layout(location = 2) in vec2 inTexCoord;
 
 layout(location = 0) out vec3 fragColor;
 layout(location = 1) out vec2 fragTexCoord;
-
-layout(push_constant) uniform PushConstants {
-    int materialIndex; // which texture to use for this submesh
-} pc;
+layout(location = 2) out flat uint instanceIndex;
 
 void main() {
+    
     gl_Position = globalUBO.proj * globalUBO.view * instanceSSBO.model[gl_InstanceIndex] * vec4(inPosition, 1.0);
+    
     fragColor = inColor;
     fragTexCoord = inTexCoord;
+    
+    instanceIndex = gl_InstanceIndex;
 }
