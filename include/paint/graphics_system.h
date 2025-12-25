@@ -64,7 +64,8 @@ private:
                                   uint32_t tile,
                                   float xtile,
                                   float ytile,
-                                  float brushSize);
+                                  float brushSize,
+                                  uint32_t descriptorSetIndex);
     
 public:
     

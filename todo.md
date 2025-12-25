@@ -6,6 +6,20 @@
 
 
 
+- [ ] move to qt, may be able to leave most of the graphics code alone .. 
+
+
+
+
+
+
+
+
+
+
+
+
+
 - [ ] tool system, selected tool, function interface
 
 - [ ] partial tiling, support any canvas size 

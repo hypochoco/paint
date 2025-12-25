@@ -142,7 +142,7 @@ void GraphicsSystem::initLayerPipeline() {
                               VK_ATTACHMENT_LOAD_OP_CLEAR);
     
     // layer descriptors
-    
+        
     for (int i = 0; i < canvasCount; i++) {
         VkFramebuffer layerFrameBuffer;
         graphics.createFramebuffer(layerFrameBuffer,
@@ -154,11 +154,12 @@ void GraphicsSystem::initLayerPipeline() {
     }
     
     graphics.createDescriptorSetLayout(layerDescriptorSetLayout);
-    graphics.createDescriptorPool(layerDescriptorPool);
+    graphics.createDescriptorPool(layerDescriptorPool, 8);
     graphics.createDescriptorSets(graphics.textureImageViews[firstLayer],
                                   layerDescriptorSets,
                                   layerDescriptorSetLayout,
-                                  layerDescriptorPool);
+                                  layerDescriptorPool,
+                                  8);
     
     // layer graphics pipeline
     
@@ -305,21 +306,39 @@ void GraphicsSystem::bufferBrush(double xpos, // screen pos
     // queue brush job
     
     auto [ xworld, yworld ] = screenToWorldSpace(xpos, ypos);
-    auto [ i, j ] = quadCollision(xworld, yworld);
-    int tile = i * numCols + j;
     
-    brushBufferTile.push_back(tile);
-    brushBufferXTile.push_back(xworld - i * 2);
-    brushBufferYTile.push_back(yworld - j * 2);
-    brushBufferBrushSize.push_back(brushSize);
-
+    // bottom left
+    
+    auto [ bli, blj ] = quadCollision(xworld - brushSize, yworld - brushSize);
+    
+    // top right
+    
+    auto [ tri, trj ] = quadCollision(xworld + brushSize, yworld + brushSize);
+    
+    // buffer to all tiles in between
+    
+    for (int i = bli; i <= tri; i++) {
+        for (int j = blj; j <= trj; j++) {
+            
+            int tile = i * numCols + j;
+            
+            brushBufferTile.push_back(tile);
+            brushBufferXTile.push_back(xworld - i * 2);
+            brushBufferYTile.push_back(yworld - j * 2);
+            brushBufferBrushSize.push_back(brushSize);
+            
+        }
+        
+    }
+    
 }
 
 void GraphicsSystem::recordBrushCommandBuffer(VkCommandBuffer commandBuffer,
                                               uint32_t tile,
                                               float xtile,
                                               float ytile,
-                                              float brushSize) {
+                                              float brushSize,
+                                              uint32_t descriptorSetIndex) {
     
     // command buffer for brush to tile
     
@@ -341,15 +360,18 @@ void GraphicsSystem::recordBrushCommandBuffer(VkCommandBuffer commandBuffer,
                                  brushDescriptorSets,
                                  pc);
     
-    // update layer to canvas texture target
+    // layer to canvas
     
     graphics.updateDescriptorSet(graphics.textureImageViews[firstLayer + tile],
-                                 layerDescriptorSets[graphics.currentFrame],
+                                 layerDescriptorSets[descriptorSetIndex * graphics.MAX_FRAMES_IN_FLIGHT + graphics.currentFrame],
                                  layerDescriptorSetLayout,
                                  layerDescriptorPool);
     
-    // layer to canvas
-    
+    std::vector<VkDescriptorSet> thingy(
+        layerDescriptorSets.begin() + descriptorSetIndex * graphics.MAX_FRAMES_IN_FLIGHT,
+        layerDescriptorSets.begin() + descriptorSetIndex * graphics.MAX_FRAMES_IN_FLIGHT + graphics.MAX_FRAMES_IN_FLIGHT
+    );
+        
     graphics.recordCommandBuffer(commandBuffer,
                                  layerRenderPass,
                                  layerFrameBuffers[tile],
@@ -361,12 +383,12 @@ void GraphicsSystem::recordBrushCommandBuffer(VkCommandBuffer commandBuffer,
                                  TILE_WIDTH,
                                  TILE_HEIGHT,
                                  layerPipelineLayout,
-                                 layerDescriptorSets);
+                                 thingy);
 
 }
 
 void GraphicsSystem::draw() {
-        
+    
     uint32_t imageIndex;
     
     graphics.startFrame(imageIndex);
@@ -389,7 +411,8 @@ void GraphicsSystem::draw() {
                                  tile,
                                  brushBufferXTile[i],
                                  brushBufferYTile[i],
-                                 brushBufferBrushSize[i]);
+                                 brushBufferBrushSize[i],
+                                 i);
         
     }
     
