@@ -7,27 +7,32 @@
 
 #pragma once
 
-#include "input_system.h"
-#include "graphics_system.h"
+#include <QMainWindow>
 
-// paint application
+//#include <QPaintEvent>       // For paintEvent()
+//#include <QResizeEvent>      // For resizeEvent()
+//#include <QMouseEvent>       // For mouse input
+//#include <QKeyEvent>         // For keyboard input
 
-class Application {
-    
-private:
-    
-    float brushSize;
-        
-    InputSystem inputSystem;
-    GraphicsSystem graphicsSystem;
+#include <QMenuBar>          // Menu bar
+#include <QMenu>             // Individual menus
+#include <QToolBar>          // Toolbars
+#include <QDockWidget>       // Dockable panels (layers, colors, etc.)
+#include <QAction>           // Menu/toolbar actions
+
+//#include <QFileDialog>       // File open/save dialogs
+//#include <QColorDialog>      // Color picker dialog
+//#include <QMessageBox>       // Alert/confirmation dialogs
+
+class MainWindow : public QMainWindow {
+    Q_OBJECT
     
 public:
+    MainWindow();
+
+private:
+    void createMenus();
+    void createToolbar();
+    void createDockPanels();
     
-    Application();
-    ~Application();
-
-    void init();
-    void run();
-    void cleanup();
-
 };

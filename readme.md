@@ -11,6 +11,17 @@ Potential names:
 
 ## Build Instructions
 
+**Pre-reqs:**
+
+This project requires QT built from source as Vulkan is cannot be configured through the installer,
+
+- Download Qt source,
+- Extract download to tmp `cd /tmp && tar xf ~/Downloads/qt-everywhere-src-6.10.1.tar.xz`,
+- Set Vulkan environment variable `export VULKAN_SDK=/Users/danielcho/VulkanSDK/1.4.321.0/macOS`,
+- Create a build dir `mkdir ~/Qt6 && cd ~Qt6`,
+- Configure Qt `/tmp/qt-everywhere-src-6.10.1/configure --verbose`,
+- Lastly, build via `cmake --build . --parallel` 
+
 **General build:**
 - `./scripts/compile.sh` to compile (not meant for Xcode)
 - `./scripts/compile_shaders.sh` to compile shaders to resources dir
