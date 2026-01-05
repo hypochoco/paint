@@ -1,20 +1,14 @@
 
 # Current development notes
 
-- [ ] tool system, selected tool, function interface
-- [ ] partial tiling, support any canvas size
- 
-- [ ] tiling jobs 
+- [ ] layer dirty tiling 
+- [ ] 
+
+- [ ] flipping canvas tools 
 
 ---
 
-Graphics engine:
-
-- [ ] More structured / documented API, less manual work with creating and deleting
-
 Painting application:
-
-- [ ] (Bug) Window resizing requires two draw calls to fix, not all frames are updated
 
 - [ ] Tiling with dirty flags 
 - [ ] Layer visibility 

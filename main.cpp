@@ -46,9 +46,9 @@ int main(int argc, char *argv[]) {
     MainWindow* mainWindow = new MainWindow();
     mainWindow->setWindowTitle("Paint Application");
     
+    // todo: move to application level code
     VulkanWindow* canvas = new VulkanWindow(&inst);
     QWidget* canvasContainer = QWidget::createWindowContainer(canvas);
-    
     mainWindow->setCentralWidget(canvasContainer); // todo: not central widget
     
     mainWindow->resize(1280, 720);

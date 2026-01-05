@@ -10,8 +10,11 @@
 #include "paint/canvas.h"
 
 #include <iostream>
+#include <algorithm>
 
 void VulkanWindow::init() {
+    
+    // general graphics
     
     graphics->setInstance(vulkanInstance()->vkInstance());
     
@@ -30,15 +33,31 @@ void VulkanWindow::init() {
     graphics->createVertexBuffer();
     graphics->createIndexBuffer();
     graphics->createUniformBuffers();
-        
-    graphics->createTexture(1024,
-                            1024,
+    
+    // canvas -> swapchain
+    
+    aspect = canvasWidth / (float) canvasHeight;
+    maxTileRow = std::ceil(canvasHeight * 0.5f / TILE_HEIGHT); // note: half the canvas
+    maxTileCol = std::ceil(canvasWidth * 0.5f/ TILE_WIDTH);
+    
+    // note: ceil is for handling odd case
+    
+    xscissorEdge = std::ceil(0.5f * (canvasWidth - TILE_WIDTH * std::floor(canvasWidth / TILE_WIDTH)));
+    xscissorEdge = xscissorEdge == 0 ? TILE_WIDTH : xscissorEdge;
+    yscissorEdge = std::ceil(0.5f * (canvasHeight - TILE_HEIGHT * std::floor(canvasHeight / TILE_HEIGHT)));
+    yscissorEdge = yscissorEdge == .0f ? TILE_HEIGHT : yscissorEdge;
+            
+    graphics->createTexture(canvasWidth,
+                            canvasHeight,
                             VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT
                             | VK_IMAGE_USAGE_TRANSFER_SRC_BIT
                             | VK_IMAGE_USAGE_TRANSFER_DST_BIT
                             | VK_IMAGE_USAGE_SAMPLED_BIT,
                             1);
-
+        
+    graphics->addDrawJob(0, 0, 1, std::vector<glm::mat4> { glm::scale(glm::mat4 { 1.0f },
+                                                                      glm::vec3 { aspect, 1.0f, 1.0f }) });
+    
     graphics->createSwapChain();
     graphics->createSwapChainImageViews();
     graphics->createSwapChainRenderPass();
@@ -51,13 +70,133 @@ void VulkanWindow::init() {
     graphics->createSwapChainDescriptorPool();
     graphics->createSwapChainDescriptorSets();
     
-    // todo: tiled canvas creation
-    // todo: brush + layer pipelines
+    // brush -> layer
     
-    // canvas draw job
+    graphics->createRenderPass(brushRenderPass,
+                               VK_ATTACHMENT_LOAD_OP_LOAD);
     
-    graphics->addDrawJob(0, 0, 1, { glm::mat4 { 1.0f } });
-            
+    graphics->createDescriptorSetLayout(brushDescriptorSetLayout);
+    graphics->createDescriptorPool(brushDescriptorPool);
+        
+    auto brushVertShaderCode = Graphics::readFile(resolveBundlePath("brush_vert.spv"));
+    auto brushFragShaderCode = Graphics::readFile(resolveBundlePath("brush_frag.spv"));
+    
+    VkShaderModule brushVertShaderModule = graphics->createShaderModule(brushVertShaderCode);
+    VkShaderModule brushFragShaderModule = graphics->createShaderModule(brushFragShaderCode);
+    
+    VkPipelineShaderStageCreateInfo brushVertShaderStageInfo{};
+    brushVertShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+    brushVertShaderStageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
+    brushVertShaderStageInfo.module = brushVertShaderModule;
+    brushVertShaderStageInfo.pName = "main";
+    
+    VkPipelineShaderStageCreateInfo brushFragShaderStageInfo{};
+    brushFragShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+    brushFragShaderStageInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+    brushFragShaderStageInfo.module = brushFragShaderModule;
+    brushFragShaderStageInfo.pName = "main";
+    
+    VkPipelineShaderStageCreateInfo brushShaderStages[] = { brushVertShaderStageInfo, brushFragShaderStageInfo };
+    
+    VkPushConstantRange pushConstantRange{};
+    pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+    pushConstantRange.offset = 0;
+    pushConstantRange.size = sizeof(BrushPushConstant); // pos(vec2) + size(vec2) => 4 floats
+    
+    graphics->createPipeline(brushPipeline,
+                             brushDescriptorSetLayout,
+                             brushPipelineLayout,
+                             brushRenderPass,
+                             brushShaderStages,
+                             pushConstantRange);
+    
+    graphics->destroyShaderModule(brushVertShaderModule);
+    graphics->destroyShaderModule(brushFragShaderModule);
+    
+    // layer -> canvas
+        
+    graphics->createRenderPass(layerRenderPass,
+                               VK_ATTACHMENT_LOAD_OP_CLEAR);
+    
+    graphics->createFramebuffer(layerFrameBuffer,
+                                layerRenderPass,
+                                graphics->textureImageViews[0], // canvas image
+                                (int) canvasWidth,
+                                (int) canvasHeight);
+    
+    graphics->createDescriptorSetLayout(layerDescriptorSetLayout);
+    graphics->createDescriptorPool(layerDescriptorPool);
+    
+    auto layerVertShaderCode = Graphics::readFile(resolveBundlePath("layer_vert.spv"));
+    auto layerFragShaderCode = Graphics::readFile(resolveBundlePath("layer_frag.spv"));
+    
+    VkShaderModule layerVertShaderModule = graphics->createShaderModule(layerVertShaderCode);
+    VkShaderModule layerFragShaderModule = graphics->createShaderModule(layerFragShaderCode);
+    
+    VkPipelineShaderStageCreateInfo layerVertShaderStageInfo{};
+    layerVertShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+    layerVertShaderStageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
+    layerVertShaderStageInfo.module = layerVertShaderModule;
+    layerVertShaderStageInfo.pName = "main";
+    
+    VkPipelineShaderStageCreateInfo layerFragShaderStageInfo{};
+    layerFragShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+    layerFragShaderStageInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+    layerFragShaderStageInfo.module = layerFragShaderModule;
+    layerFragShaderStageInfo.pName = "main";
+    
+    VkPipelineShaderStageCreateInfo layerShaderStages[] = { layerVertShaderStageInfo, layerFragShaderStageInfo };
+    
+    graphics->createPipeline(layerPipeline,
+                             layerDescriptorSetLayout,
+                             layerPipelineLayout,
+                             layerRenderPass,
+                             layerShaderStages);
+    
+    graphics->destroyShaderModule(layerVertShaderModule);
+    graphics->destroyShaderModule(layerFragShaderModule);
+    
+    // default camera position
+    
+    camera->z = 3.0f; // note: update called in recreate swapchain
+    
+    // default background layer
+    
+    graphics->createTexture(canvasWidth,
+                            canvasHeight,
+                            VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT
+                            | VK_IMAGE_USAGE_TRANSFER_SRC_BIT
+                            | VK_IMAGE_USAGE_TRANSFER_DST_BIT
+                            | VK_IMAGE_USAGE_SAMPLED_BIT,
+                            1);
+    
+    // todo: function to update descriptor set
+    // todo: what about from layers to canvas ?
+
+    graphics->createDescriptorSets(graphics->textureImageViews[1], // default layer
+                                   layerDescriptorSets,
+                                   layerDescriptorSetLayout,
+                                   layerDescriptorPool);
+    
+    // temp: default texture brush
+        
+    graphics->loadTexture(resolveBundlePath("brush.png"),
+                          VK_IMAGE_USAGE_TRANSFER_SRC_BIT
+                          | VK_IMAGE_USAGE_TRANSFER_DST_BIT
+                          | VK_IMAGE_USAGE_SAMPLED_BIT,
+                          1);
+    
+    graphics->createDescriptorSets(graphics->textureImageViews[2], // default brush index
+                                   brushDescriptorSets,
+                                   brushDescriptorSetLayout,
+                                   brushDescriptorPool);
+    
+    graphics->createFramebuffer(brushFrameBuffer,
+                                brushRenderPass,
+                                graphics->textureImageViews[1],
+                                (int) canvasWidth,
+                                (int) canvasHeight);
+
 }
 
 void VulkanWindow::releaseSwapChain() {
@@ -70,36 +209,179 @@ void VulkanWindow::recreateSwapChain() {
     
     graphics->recreateSwapChain(); // note: waits for device idle
     
-    // default camera + positions
+    // update global ubo with camera + instance ssbo's
     
-    float depth = 3.f;
-    float cameraX = 0.f;
-    float cameraY = 0.f;
+    camera->update(
+       graphics->getSwapChainExtent().width / (float) graphics->getSwapChainExtent().height // aspect
+    );
     
-    glm::mat4 view = glm::lookAt(glm::vec3(cameraX, cameraY, depth), // camera pos
-                                 glm::vec3(cameraX, cameraY, 0.0f), // look at
-                                 glm::vec3(0.0f, 1.0f, 0.0f)); // up
-    glm::mat4 proj = glm::perspective(glm::radians(45.0f), // fovy
-                                      graphics->getSwapChainExtent().width
-                                      / (float) graphics->getSwapChainExtent().height, // aspect
-                                      0.1f, // near
-                                      10.0f); // far
-    proj[1][1] *= -1; // strange projection fix
-
     for (int i = 0; i< graphics->MAX_FRAMES_IN_FLIGHT; i++) {
-        graphics->updateGlobalUBO(i, view, proj);
+        graphics->updateGlobalUBO(i, camera->view, camera->proj);
         graphics->copyInstanceToBuffer(i);
     }
 
 }
 
+std::array<int, 2> VulkanWindow::tileCollision(float xworld, float yworld) {
+    
+    // convert to pixel space, then tile space
+    
+    static float xscale = canvasHeight * 0.5f / TILE_WIDTH;
+    static float yscale = canvasHeight * 0.5f / TILE_HEIGHT;
+    
+    int col = static_cast<int>(std::floor(xworld * xscale));
+    int row = static_cast<int>(std::floor(yworld * yscale));
+    return { col, row };
+    
+}
+
+std::array<float, 2> VulkanWindow::screenToWorldSpace(double xpos, double ypos) {
+                
+    float ndcX = (xpos / width()) * 2.0f - 1.0f;
+    float ndcY = 1.0f - (ypos / height()) * 2.0f;
+
+    float aspect = (float) width() / height(); // window aspect
+    float tanHalfFovy = 0.4142f; // hard coded for 45 deg
+    
+    return {
+        ndcX * camera->z * tanHalfFovy * aspect + camera->x,
+        ndcY * camera->z * tanHalfFovy + camera->y
+    };
+
+}
+
+void VulkanWindow::bufferBrush(double xpos, // screen pos
+                               double ypos, // screen pos
+                               float brushSize) { // todo: brush orientation
+    
+    // todo: pixel level out of bounds here 
+        
+    auto [ xworld, yworld ] = screenToWorldSpace(xpos, ypos);
+    auto [ ci, cj ] = tileCollision(xworld, yworld);
+        
+    if (ci < - (int) maxTileCol
+        || cj < - (int) maxTileRow
+        || ci >= (int) maxTileCol
+        || cj >= (int) maxTileRow) return; // canvas bounds
+
+    auto [ bli, blj ] = tileCollision(xworld - brushSize, yworld - brushSize); // bottom left
+    auto [ tri, trj ] = tileCollision(xworld + brushSize, yworld + brushSize); // top right
+    
+    for (int i = bli; i <= tri; i++) {
+        for (int j = blj; j <= trj; j++) {
+            brushBufferXPos.push_back(xworld / aspect); // model space
+            brushBufferYPos.push_back(yworld);
+            brushBufferXBrushSize.push_back(brushSize / aspect); // model space
+            brushBufferYBrushSize.push_back(brushSize);
+            brushBufferXTile.push_back(i); // pixel space
+            brushBufferYTile.push_back(j);
+        }
+    }
+    
+}
+
 void VulkanWindow::recordCommandBuffer() {
+            
+    VkCommandBuffer& commandBuffer = graphics->commandBuffers[graphics->currentFrame];
+    
+    // brush command buffer
+    
+    graphics->recordBeginRenderPass(commandBuffer,
+                                    brushRenderPass,
+                                    brushFrameBuffer,
+                                    canvasWidth,
+                                    canvasHeight,
+                                    brushPipeline);
+    
+    graphics->recordBindDescriptorSet(commandBuffer,
+                                      brushPipelineLayout,
+                                      brushDescriptorSets);
+    
+    graphics->recordSetViewport(commandBuffer,
+                                0.0f,
+                                0.0f,
+                                canvasWidth,
+                                canvasHeight);
+    
+    for (int i = 0; i < brushBufferXPos.size(); i++) {
+        
+        float xpos = brushBufferXPos[i];
+        float ypos = brushBufferYPos[i];
+        int xtile = brushBufferXTile[i];
+        int ytile = brushBufferYTile[i];
+        float xbs = brushBufferXBrushSize[i];
+        float ybs = brushBufferYBrushSize[i];
+                                        
+        graphics->recordSetScissor(commandBuffer,
+                                   std::clamp(xtile * (float) TILE_WIDTH + canvasWidth * 0.5f,
+                                              .0f, (float) canvasWidth),
+                                   std::clamp(ytile * (float) TILE_HEIGHT + canvasHeight * 0.5f,
+                                              .0f, (float) canvasHeight),
+                                   (xtile == - maxTileCol || xtile == maxTileCol - 1 ? xscissorEdge : TILE_WIDTH),
+                                   (ytile == - maxTileRow || ytile == maxTileRow - 1 ? yscissorEdge : TILE_HEIGHT));
+
+        BrushPushConstant pc { { xpos, ypos }, { xbs, ybs } };
+                
+        graphics->recordPushConstant(commandBuffer,
+                                     brushPipelineLayout,
+                                     sizeof(pc),
+                                     &pc);
+        
+        graphics->recordDraw(commandBuffer);
+
+    }
+    
+    graphics->recordEndRenderPass(commandBuffer);
+    
+    brushBufferXPos.clear();
+    brushBufferYPos.clear();
+    brushBufferXTile.clear();
+    brushBufferYTile.clear();
+    brushBufferXBrushSize.clear();
+    brushBufferYBrushSize.clear();
+    
+    // layer command buffer
+    
+    // todo: visible layers to canvas
+        
+    graphics->recordBeginRenderPass(commandBuffer,
+                                    layerRenderPass,
+                                    layerFrameBuffer,
+                                    canvasWidth,
+                                    canvasHeight,
+                                    layerPipeline);
+    
+    graphics->recordBindDescriptorSet(commandBuffer,
+                                      layerPipelineLayout,
+                                      layerDescriptorSets);
+    
+    graphics->recordSetViewport(commandBuffer,
+                                0.0f,
+                                0.0f,
+                                canvasWidth,
+                                canvasHeight);
+    
+    graphics->recordSetScissor(commandBuffer,
+                               0.0f,
+                               0.0f,
+                               canvasWidth,
+                               canvasHeight);
+    
+    // todo: for each dirty tile above (render all the layers even though only one dirty)
+    
+    graphics->recordDraw(commandBuffer);
+    
+    graphics->recordEndRenderPass(commandBuffer);
     
 }
 
 void VulkanWindow::render() {
     
     // todo: fix resizing delay
+    
+    if (!brushBufferXBrushSize.empty()) { // check dirty conditions
+        dirty = true;
+    }
     
     if (!dirty) {
         return; // wait for next frame
@@ -126,8 +408,22 @@ void VulkanWindow::render() {
 
 void VulkanWindow::cleanup() {
     
-    // todo: application specific cleanup
+    graphics->deviceWaitIdle();
     
+    graphics->destroyPipeline(brushPipeline);
+    graphics->destroyPipelineLayout(brushPipelineLayout);
+    graphics->destroyRenderPass(brushRenderPass);
+    graphics->destroyFrameBuffer(brushFrameBuffer);
+    graphics->destroyDescriptorPool(brushDescriptorPool);
+    graphics->destroyDescriptorSetLayout(brushDescriptorSetLayout);
+    
+    graphics->destroyPipeline(layerPipeline);
+    graphics->destroyPipelineLayout(layerPipelineLayout);
+    graphics->destroyRenderPass(layerRenderPass);
+    graphics->destroyFrameBuffer(layerFrameBuffer);
+    graphics->destroyDescriptorPool(layerDescriptorPool);
+    graphics->destroyDescriptorSetLayout(layerDescriptorSetLayout);
+
     graphics->cleanupVulkan();
     
 }
@@ -179,7 +475,12 @@ void VulkanWindow::resizeEvent(QResizeEvent *event) {
 }
 
 void VulkanWindow::mousePressEvent(QMouseEvent *event) {
+    
     if (event->button() == Qt::LeftButton) {
         qDebug() << "Left click at" << event->position();
+        dirty = true;
+        // todo: brush down and brush
+        bufferBrush(event->position().x(), event->position().y(), brushSize);
     }
+    
 }
