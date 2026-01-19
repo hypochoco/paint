@@ -37,12 +37,12 @@ void MainWindow::createToolbar() {
 
 void MainWindow::createDockPanels() {
     
-    // Layers panel
-    QDockWidget* layersDock = new QDockWidget("Layers", this);
-    addDockWidget(Qt::RightDockWidgetArea, layersDock);
-
-    // Color picker panel
     QDockWidget* colorDock = new QDockWidget("Colors", this);
+    colorDock->setMinimumWidth(360);
     addDockWidget(Qt::RightDockWidgetArea, colorDock);
+    
+    QDockWidget* layersDock = new QDockWidget("Layers", this);
+    layersDock->setMinimumWidth(360);
+    addDockWidget(Qt::RightDockWidgetArea, layersDock);
     
 }

@@ -1,18 +1,25 @@
 
 # Current development notes
 
-- [ ] layer dirty tiling 
-- [ ] 
+- [ ] [BUG] Sometimes brush stops stamping
+    - [ ] Reiszing appears to update canvas with all the missed changes
+    
+- [ ] Revamp actions
+    - [ ] Action history processing 
 
-- [ ] flipping canvas tools 
-
+- [ ] Setup brush functionality
+    - [x] Start brush action
+    - [x] End brush action
+    - [ ] Interpolation in between
+    - [x] Brush history
+    - [ ] Brush undo button  
+    
 ---
 
 Painting application:
 
-- [ ] Tiling with dirty flags 
 - [ ] Layer visibility 
-- [ ] Configure scissors for better optimization
+- [ ] Canvas flipping
 
 - [ ] Tooling system
     - [ ] Brush tool
