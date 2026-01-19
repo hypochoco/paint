@@ -69,6 +69,10 @@ void Canvas::mouseMoveEvent(QMouseEvent *event) {
     }
 }
 
+void Canvas::onRequestUpdate() {
+    qDebug() << "[canvas] update requested";
+    requestUpdate();
+}
 
 
 

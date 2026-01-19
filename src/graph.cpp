@@ -17,6 +17,10 @@ void BrushNode::execute(RenderWorker* worker) {
     worker->processBrush(brushStroke);
 }
 
+void BrushNode::cleanup() {
+    delete brushStroke;
+}
+
 // events
 
 void CameraEvent::build(Node* node) {

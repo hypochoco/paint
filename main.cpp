@@ -19,13 +19,6 @@
 #include "paint/tool.h" // tool system
 #include "paint/canvas.h" // vulkan canvas
 
-// todo: register data for qvariant use
-
-//#include <QMetaType>
-//Q_DECLARE_METATYPE(obj)
-// // in main() (before connections):
-//qRegisterMetaType<obj>("obj");
-
 int main(int argc, char *argv[]) {
     QApplication app(argc, argv);
     
@@ -80,6 +73,11 @@ int main(int argc, char *argv[]) {
     QObject::connect(canvas, &Canvas::surfaceAboutToBeDestroyed,
                      renderSystem, &RenderSystem::onSurfaceAbobutToBeDestroyed);
     
+    // todo: move off the timer
+    
+    QObject::connect(renderSystem, &RenderSystem::requestUpdate,
+                     canvas, &Canvas::onRequestUpdate);
+
     
     QObject::connect(canvas, &Canvas::leftButtonPressed,
                      toolSystem, &ToolSystem::leftButtonPressed);
@@ -89,6 +87,7 @@ int main(int argc, char *argv[]) {
     
     QObject::connect(canvas, &Canvas::mouseMoved,
                      toolSystem, &ToolSystem::mouseMoved);
+    
     
     QObject::connect(renderSystem, &RenderSystem::queryToolSystem,
                      toolSystem, &ToolSystem::onQuery);

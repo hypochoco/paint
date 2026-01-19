@@ -24,6 +24,7 @@
 #include "paint/tool.h"
 
 struct Action; // forward declaration
+struct BrushPoint; // forward declaration
 struct BrushStroke; // forward declaration
 struct FrameGraph; // forward declaration
 class RenderWorker; // forward declaration
@@ -68,8 +69,7 @@ public:
     void cleanup();
     
     void updateCamera(uint32_t currentFrame);
-    std::array<float, 2> screenToWorldSpace(double xpos, double ypos);
-    void stamp(VkCommandBuffer& commandBuffer, float x, float y);
+    void stamp(VkCommandBuffer& commandBuffer, std::vector<BrushPoint> stamps);
     
 public slots:
     void onSurfaceCreated(QWindow* window) {
@@ -102,6 +102,7 @@ public slots:
     }
     
 signals:
+    void requestUpdate();
     void queueRender(FrameGraph* frameGraph);
     void queryToolSystem();
         

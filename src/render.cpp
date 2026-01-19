@@ -125,7 +125,7 @@ void RenderSystem::initStamp() {
 
 }
 
-void RenderSystem::stamp(VkCommandBuffer& commandBuffer, float x, float y) {
+void RenderSystem::stamp(VkCommandBuffer& commandBuffer, std::vector<BrushPoint> stamps) {
     
     graphics->recordBeginRenderPass(commandBuffer,
                                     stampRenderPass,
@@ -149,15 +149,19 @@ void RenderSystem::stamp(VkCommandBuffer& commandBuffer, float x, float y) {
                                0.0f,
                                canvasWidth,
                                canvasHeight);
+    
+    for (BrushPoint stamp : stamps) {
+        
+        StampPushConstant pc { { stamp.position.x, stamp.position.y }, { 0.25f, 0.25f } };
 
-    StampPushConstant pc { { x, y }, { 0.25f, 0.25f } };
+        graphics->recordPushConstant(commandBuffer,
+                                     stampPipelineLayout,
+                                     sizeof(pc),
+                                     &pc);
 
-    graphics->recordPushConstant(commandBuffer,
-                                 stampPipelineLayout,
-                                 sizeof(pc),
-                                 &pc);
-
-    graphics->recordDraw(commandBuffer);
+        graphics->recordDraw(commandBuffer);
+        
+    }
 
     graphics->recordEndRenderPass(commandBuffer);
 
@@ -237,15 +241,16 @@ void RenderSystem::recordFrameGraph() {
     for (Action* action : actions) {
         action->addEvent(currentFrameGraph());
     }
+    actions.clear();
     
     if (!currentFrameGraph()->empty()) { // todo: make into a single function
         currentFrameGraph()->cx = camera->x;
         currentFrameGraph()->cy = camera->y;
         currentFrameGraph()->cz = camera->z;
+        currentFrameGraph()->windowWidth = windowWidth;
+        currentFrameGraph()->windowHeight = windowHeight;
         currentFrameGraph()->windowAspect = windowAspect;
     }
-    
-    actions.clear();
 
 }
 
@@ -273,10 +278,14 @@ void RenderSystem::render() {
         graphics->recreateSwapChain();
     }
     
+    qDebug() << "[render system] image index: " << graphics->imageIndex
+        << ", current frame: " << graphics->currentFrame;
+    
     currentFrameGraph()->imageIndex = graphics->imageIndex;
     currentFrameGraph()->currentFrame = graphics->currentFrame;
         
     emit queueRender(currentFrameGraph());
+    emit requestUpdate();
     
     graphics->advanceFrame(); // note: only for functions in this scope
     

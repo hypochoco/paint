@@ -10,7 +10,7 @@
 #include "paint/brush.h"
 
 RenderWorker::RenderWorker(RenderSystem* renderSystem) {
-    this->renderSystem = renderSystem;
+    this->renderSystem = renderSystem; // todo: remove ?
     this->graphics = renderSystem->graphics;
 }
 
@@ -31,13 +31,19 @@ void RenderWorker::updateCamera() {
 }
 
 void RenderWorker::processBrush(BrushStroke* brushStroke) {
-    qDebug() << "[render worker] process brush " << brushStroke->rawBrushPoints.size();
+    qDebug() << "[render worker] process brush, raw brush size: "
+        << brushStroke->rawBrushPoints.size() << ", submitted index: "
+        << brushStroke->submitedIndex;
     
-//    RawBrushPoint rawBrushPoint = brushStroke.rawBrushPoints.back();
-//    auto [x, y] = BrushEngine::screenToWorldSpace(cx, cy, cz,
-//                                                  width, height,
-//                                                  rawBrushPoint.x, rawBrushPoint.y);
-//    renderSystem->stamp(graphics->commandBuffers[renderJob->currentFrame], x, y);
+    if (brushStroke->processed) return;
+    if (brushStroke->submitedIndex == brushStroke->rawBrushPoints.size() - 1) return;
+    
+    // todo: move pipelines to brush engine
+    
+    renderSystem->stamp(graphics->commandBuffers[frameGraph->currentFrame],
+                        BrushEngine::interpolate(brushStroke,
+                                                 frameGraph->cx, frameGraph->cy, frameGraph->cz,
+                                                 frameGraph->windowWidth, frameGraph->windowHeight));
     
 }
 

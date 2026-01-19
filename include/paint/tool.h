@@ -18,34 +18,40 @@ enum Tool {
     BRUSH
 };
 
-struct Action : QObject { // todo: make into a QObject
-    Q_OBJECT
+struct Action {
     
-public:
     virtual ~Action() = default;
-    
-    bool complete = false;
+
     bool processed = false;
     
+    virtual Action* clone() = 0;
+
     virtual void start(int x, int y) = 0;
     virtual void record(int x, int y) = 0;
     virtual void end(int x, int y) = 0;
     
+    virtual void update() = 0;
     virtual void addEvent(FrameGraph* frameGraph) = 0;
+    
 };
 
 struct BrushPoint {
-    int x, y; // todo: pressure
+    BrushPoint(int x, int y) : position(x,y) {}
+    BrushPoint(glm::vec2 position) : position(position) {}
+    glm::vec2 position;
 };
 
 struct BrushStroke : public Action {
+    
+    size_t submitedIndex;
     std::vector<BrushPoint> rawBrushPoints;
-    std::vector<BrushPoint> brushPoints;
-    void addRawBrushPoint(int x, int y) {
-        rawBrushPoints.emplace_back(BrushPoint { x, y });
+    
+    BrushStroke* clone() override {
+        return new BrushStroke(*this);
     }
-    void addBrushPoint(int x, int y) {
-        brushPoints.emplace_back(BrushPoint { x, y });
+    
+    void addRawBrushPoint(int x, int y) {
+        rawBrushPoints.emplace_back(BrushPoint(x,y));
     }
     void start(int x, int y) override {
         addRawBrushPoint(x, y);
@@ -55,7 +61,9 @@ struct BrushStroke : public Action {
     }
     void end(int x, int y) override {
         addRawBrushPoint(x, y);
-        complete = true;
+    }
+    void update() override {
+        submitedIndex = rawBrushPoints.size()-1;
     }
     void addEvent(FrameGraph* frameGraph) override;
 };
@@ -106,14 +114,15 @@ public slots:
         }
     }
     void onQuery() { // send over queued tools
-        qDebug() << "[tool system] on query";
-        std::vector<Action*> actions;
+        std::vector<Action*> actions; // copy
         if (currentAction && !currentAction->processed) {
-            actions.push_back(currentAction);
+            actions.push_back(currentAction->clone());
+            currentAction->update();
         }
         for (Action* action : actionHistory) {
             if (!action->processed) {
-                actions.push_back(action);
+                action->processed = true; // note: assuming completion
+                actions.push_back(action->clone());
             }
         }
         if (!actions.empty()) {

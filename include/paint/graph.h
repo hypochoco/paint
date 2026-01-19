@@ -21,6 +21,7 @@ struct Node {
     ~Node() = default;
     std::vector<Node*> children;
     virtual void execute(RenderWorker* worker) {};
+    virtual void cleanup() {};
 };
 
 struct CameraNode : public Node {
@@ -31,6 +32,7 @@ struct BrushNode : public Node {
     BrushStroke* brushStroke;
     BrushNode(BrushStroke* brushStroke) : brushStroke(brushStroke) {}
     void execute(RenderWorker* worker) override;
+    void cleanup() override;
 };
 
 // events
@@ -60,6 +62,7 @@ struct FrameGraph {
     uint32_t currentFrame;
     
     float cx, cy, cz; // camera positions
+    uint32_t windowWidth, windowHeight;
     float windowAspect;
         
     Node* root;
@@ -93,7 +96,9 @@ struct FrameGraph {
         for (Node* child : node->children) {
             deleteNode(child);
         }
+        node->cleanup();
         delete node;
+        node = nullptr;
     }
     
     void clear() {

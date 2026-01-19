@@ -31,6 +31,9 @@ public:
     void mouseReleaseEvent(QMouseEvent* event) override;
     void mouseMoveEvent(QMouseEvent* event) override;
     
+public slots:
+    void onRequestUpdate();
+    
 signals:
     void surfaceCreated(QWindow* window);
     void exposed(bool isExposed);

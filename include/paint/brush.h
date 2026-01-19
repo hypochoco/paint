@@ -12,9 +12,11 @@
 class BrushEngine {
     
 public:
-    static std::array<float, 2> screenToWorldSpace(float cx, float cy, float cz,
-                                                   uint32_t width, uint32_t height,
-                                                   float x, float y);
-//    static void interpolate(BrushStroke brushStroke);
+    static glm::vec2 screenToWorldSpace(float cx, float cy, float cz,
+                                        uint32_t width, uint32_t height,
+                                        float x, float y);
+    static std::vector<BrushPoint> interpolate(BrushStroke* brushStroke,
+                                               float cx, float cy, float cz,
+                                               uint32_t width, uint32_t height);
     
 };

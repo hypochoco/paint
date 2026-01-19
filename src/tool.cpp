@@ -10,4 +10,3 @@
 void BrushStroke::addEvent(FrameGraph* frameGraph) {
     frameGraph->addBrushEvent(this);
 }
-
