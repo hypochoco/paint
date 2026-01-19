@@ -94,8 +94,8 @@ int main(int argc, char *argv[]) {
                      toolSystem, &ToolSystem::onQuery);
     
     
-    QObject::connect(toolSystem, &ToolSystem::submitBrushStroke,
-                     renderSystem, &RenderSystem::onBrushStroke);
+    QObject::connect(toolSystem, &ToolSystem::submitActions,
+                     renderSystem, &RenderSystem::onActions);
     
     
     mainWindow->setCentralWidget(canvasContainer);

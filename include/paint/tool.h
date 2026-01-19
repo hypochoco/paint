@@ -10,29 +10,54 @@
 #include <QObject>
 #include <QDebug>
 
-// todo: clean up the history here somehow
+#include "paint/graph.h"
+
+struct FrameGraph; // forward declaration
 
 enum Tool {
     BRUSH
 };
 
-struct Action {
+struct Action : QObject { // todo: make into a QObject
+    Q_OBJECT
     
+public:
+    virtual ~Action() = default;
+    
+    bool complete = false;
+    bool processed = false;
+    
+    virtual void start(int x, int y) = 0;
+    virtual void record(int x, int y) = 0;
+    virtual void end(int x, int y) = 0;
+    
+    virtual void addEvent(FrameGraph* frameGraph) = 0;
 };
 
-struct RawBrushPoint {
-    int x, y;
-    // todo: pressure
+struct BrushPoint {
+    int x, y; // todo: pressure
 };
 
 struct BrushStroke : public Action {
-    uint32_t lastUpdated = 0;
-    std::vector<RawBrushPoint> rawBrushPoints;
-    
-    bool ready() {
-        if (rawBrushPoints.empty()) return false;
-        else return lastUpdated != rawBrushPoints.size();
+    std::vector<BrushPoint> rawBrushPoints;
+    std::vector<BrushPoint> brushPoints;
+    void addRawBrushPoint(int x, int y) {
+        rawBrushPoints.emplace_back(BrushPoint { x, y });
     }
+    void addBrushPoint(int x, int y) {
+        brushPoints.emplace_back(BrushPoint { x, y });
+    }
+    void start(int x, int y) override {
+        addRawBrushPoint(x, y);
+    }
+    void record(int x, int y) override {
+        addRawBrushPoint(x, y);
+    }
+    void end(int x, int y) override {
+        addRawBrushPoint(x, y);
+        complete = true;
+    }
+    void addEvent(FrameGraph* frameGraph) override;
 };
 
 class ToolSystem : public QObject {
@@ -40,42 +65,67 @@ class ToolSystem : public QObject {
     
 public:
     ToolSystem() {
-        selectedTool = Tool::BRUSH;
+        selectedTool = Tool::BRUSH; // temp: default tool
+    }
+    ~ToolSystem() {
+        if (currentAction) {
+            delete currentAction;
+            currentAction = nullptr;
+        }
+        for (Action* action : actionHistory) {
+            delete action;
+        }
+        actionHistory.clear();
     }
     
 public slots:
     void leftButtonPressed(int x, int y) {
         qDebug() << "[tool system] left button pressed";
-        if (selectedTool == Tool::BRUSH) {
-            brushStrokes.emplace_back(BrushStroke {});
-            brushStrokes.back().rawBrushPoints.emplace_back(RawBrushPoint { x, y });
+        switch (selectedTool) {
+            case Tool::BRUSH:
+                currentAction = new BrushStroke;
+                break;
+            default:
+                break;
+        }
+        if (currentAction) {
+            currentAction->start(x, y);
         }
     }
     void leftButtonReleased(int x, int y) {
         qDebug() << "[tool system] left button released";
-        if (selectedTool == Tool::BRUSH) {
-            brushStrokes.back().rawBrushPoints.emplace_back(RawBrushPoint { x, y });
+        if (currentAction) {
+            currentAction->end(x, y);
+            actionHistory.push_back(currentAction);
+            currentAction = nullptr;
         }
     }
     void mouseMoved(int x, int y) { // note: only triggered when left mouse button down
-        if (selectedTool == Tool::BRUSH) {
-            brushStrokes.back().rawBrushPoints.emplace_back(RawBrushPoint { x, y });
+        if (currentAction) {
+            currentAction->record(x, y);
         }
     }
     void onQuery() { // send over queued tools
-        if (!brushStrokes.empty() && brushStrokes.back().ready()) {
-            
-            qDebug() << "[tool] on query";
-            
-            emit submitBrushStroke(brushStrokes.back());
-            brushStrokes.back().lastUpdated = (uint32_t) brushStrokes.back().rawBrushPoints.size();
+        qDebug() << "[tool system] on query";
+        std::vector<Action*> actions;
+        if (currentAction && !currentAction->processed) {
+            actions.push_back(currentAction);
+        }
+        for (Action* action : actionHistory) {
+            if (!action->processed) {
+                actions.push_back(action);
+            }
+        }
+        if (!actions.empty()) {
+            emit submitActions(actions);
         }
     }
     
 signals:
-    void submitBrushStroke(BrushStroke brushStroke);
+    void submitActions(std::vector<Action*> actions);
     
 private:
     Tool selectedTool;
-    std::vector<BrushStroke> brushStrokes; // todo: ring buffer
+    Action* currentAction;
+    std::vector<Action*> actionHistory;
 };

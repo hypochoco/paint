@@ -14,48 +14,49 @@ RenderWorker::RenderWorker(RenderSystem* renderSystem) {
     this->graphics = renderSystem->graphics;
 }
 
-void RenderWorker::updateCamera(float x, float y, float z, float aspect) {
+void RenderWorker::updateCamera() {
     qDebug() << "[render worker] update camera";
     
     glm::mat4 view, proj;
-    view = glm::lookAt(glm::vec3(x, y, z), // camera pos
-                       glm::vec3(x, y, 0.0f), // look at
+    view = glm::lookAt(glm::vec3(frameGraph->cx, frameGraph->cy, frameGraph->cz), // camera pos
+                       glm::vec3(frameGraph->cx, frameGraph->cy, 0.0f), // look at
                        glm::vec3(0.0f, 1.0f, 0.0f)); // up
     proj = glm::perspective(glm::radians(45.0f), // fovy
-                            aspect,
+                            frameGraph->windowAspect,
                             0.1f, // near
                             10.0f); // far
     proj[1][1] *= -1; // strange projection fix
     
-    graphics->updateGlobalUBO(renderJob->currentFrame, view, proj);
+    graphics->updateGlobalUBO(frameGraph->currentFrame, view, proj);
 }
 
-void RenderWorker::processBrush(float cx, float cy, float cz,
-                                uint32_t width, uint32_t height,
-                                BrushStroke brushStroke) {
-    qDebug() << "[render worker] process brush " << brushStroke.rawBrushPoints.size();
+void RenderWorker::processBrush(BrushStroke* brushStroke) {
+    qDebug() << "[render worker] process brush " << brushStroke->rawBrushPoints.size();
     
-    RawBrushPoint rawBrushPoint = brushStroke.rawBrushPoints.back();
-    auto [x, y] = BrushEngine::screenToWorldSpace(cx, cy, cz,
-                                                  width, height,
-                                                  rawBrushPoint.x, rawBrushPoint.y);
-    renderSystem->stamp(graphics->commandBuffers[renderJob->currentFrame], x, y);
+//    RawBrushPoint rawBrushPoint = brushStroke.rawBrushPoints.back();
+//    auto [x, y] = BrushEngine::screenToWorldSpace(cx, cy, cz,
+//                                                  width, height,
+//                                                  rawBrushPoint.x, rawBrushPoint.y);
+//    renderSystem->stamp(graphics->commandBuffers[renderJob->currentFrame], x, y);
+    
 }
 
-void RenderWorker::onRender(RenderJob job) {
-    qDebug() << "[render worker] on render";
-    
-    FrameGraph* frameGraph = renderSystem->frameGraphs[job.currentFrame];
-    frameGraph->build();
-    
-    renderJob = &job; // cache render job
-    
-    graphics->beginCommandBuffer(job.currentFrame);
-    for (Node* node : frameGraph->nodes) {
-        node->execute(this);
+void RenderWorker::traverse(Node* node) {
+    if (!node) return;
+    for (Node* child : node->children) {
+        traverse(child);
     }
-    graphics->recordSwapChainCommandBuffer(job.currentFrame);
-    graphics->endCommandBuffer(job.currentFrame);
+    node->execute(this);
+}
+
+void RenderWorker::onRender(FrameGraph* frameGraph) {
+    this->frameGraph = frameGraph;
+    this->frameGraph->build();
+        
+    graphics->beginCommandBuffer(this->frameGraph->currentFrame);
+    traverse(this->frameGraph->root);
+    graphics->recordSwapChainCommandBuffer(this->frameGraph->currentFrame);
+    graphics->endCommandBuffer(this->frameGraph->currentFrame);
     
-    emit queuePresent(job);
+    emit queuePresent(this->frameGraph);
 }

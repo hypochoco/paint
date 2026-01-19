@@ -222,26 +222,30 @@ void RenderSystem::init() {
 
 void RenderSystem::recordFrameGraph() {
     
-    // note: sending jobs to worker
-    
-    FrameGraph* frameGraph = currentFrameGraph(); // todo: don't use pointers here ?
-    
+    emit queryToolSystem();
+                
     if (resized) {
         resized = false;
         cameraDirty.assign(graphics->MAX_FRAMES_IN_FLIGHT, true);
     }
     
     if (cameraDirty[graphics->currentFrame]) {
-        frameGraph->addCameraEvent(camera->x, camera->y, camera->z, windowAspect);
         cameraDirty[graphics->currentFrame] = false;
+        currentFrameGraph()->addCameraEvent();
     }
     
-    if (brushStroke.has_value()) {
-        frameGraph->addBrushEvent(camera->x, camera->y, camera->z,
-                                  windowWidth, windowHeight,
-                                  brushStroke.value());
-        brushStroke.reset();
+    for (Action* action : actions) {
+        action->addEvent(currentFrameGraph());
     }
+    
+    if (!currentFrameGraph()->empty()) { // todo: make into a single function
+        currentFrameGraph()->cx = camera->x;
+        currentFrameGraph()->cy = camera->y;
+        currentFrameGraph()->cz = camera->z;
+        currentFrameGraph()->windowAspect = windowAspect;
+    }
+    
+    actions.clear();
 
 }
 
@@ -262,28 +266,30 @@ void RenderSystem::render() {
 
     graphics->waitForFences();
     
-    emit queryToolSystem();
-    
     recordFrameGraph();
     if (currentFrameGraph()->empty()) return;
     
     if (graphics->aquireNextImage()) {
         graphics->recreateSwapChain();
     }
+    
+    currentFrameGraph()->imageIndex = graphics->imageIndex;
+    currentFrameGraph()->currentFrame = graphics->currentFrame;
         
-    emit queueRender(RenderJob { graphics->imageIndex, graphics->currentFrame });
+    emit queueRender(currentFrameGraph());
     
     graphics->advanceFrame(); // note: only for functions in this scope
     
 }
 
-void RenderSystem::onPresent(RenderJob job) {
+void RenderSystem::onPresent(FrameGraph* frameGraph) {
     qDebug() << "[render system] on present";
-    graphics->queueSubmit(job.currentFrame);
-    if (graphics->queuePresent(job.imageIndex, job.currentFrame)) {
+    graphics->queueSubmit(frameGraph->currentFrame);
+    if (graphics->queuePresent(frameGraph->imageIndex,
+                               frameGraph->currentFrame)) {
         resized = true;
     }
-    frameGraphs[job.currentFrame]->clear();
+    frameGraph->clear();
 }
 
 void RenderSystem::cleanup() {

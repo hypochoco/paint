@@ -23,13 +23,10 @@
 #include "paint/graph.h"
 #include "paint/tool.h"
 
+struct Action; // forward declaration
 struct BrushStroke; // forward declaration
 struct FrameGraph; // forward declaration
-
-struct RenderJob {
-    uint32_t imageIndex;
-    uint32_t currentFrame;
-};
+class RenderWorker; // forward declaration
 
 struct Camera {
     float x, y, z;
@@ -94,18 +91,18 @@ public slots:
         this->windowAspect = width / (float) height;
         resized = true;
     }
-    void onPresent(RenderJob job);
+    void onPresent(FrameGraph* frameGraph);
     void onSurfaceAbobutToBeDestroyed() {
         qDebug() << "[render system] surface about to be destroyed";
         cleanup();
     }
-    void onBrushStroke(BrushStroke brushStroke) {
-        qDebug() << "[render system] on brush stroke";
-        this->brushStroke = brushStroke;
+    void onActions(std::vector<Action*> actions) {
+        qDebug() << "[render system] on actions";
+        this->actions = actions;
     }
     
 signals:
-    void queueRender(RenderJob job);
+    void queueRender(FrameGraph* frameGraph);
     void queryToolSystem();
         
 private:
@@ -125,7 +122,7 @@ private:
     bool resized;
     std::vector<bool> cameraDirty;
     
-    std::optional<BrushStroke> brushStroke;
+    std::vector<Action*> actions;
     
     uint32_t canvasWidth = 1024;
     uint32_t canvasHeight = 1024;

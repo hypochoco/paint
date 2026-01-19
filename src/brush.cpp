@@ -24,9 +24,9 @@ std::array<float, 2> BrushEngine::screenToWorldSpace(float cx, float cy, float c
 
 }
 
-void BrushEngine::interpolate(BrushStroke brushStroke) {
-    
-    float spacing = 0.5f; // todo: move this elsewhere
-    
-    return;
-}
+//void BrushEngine::interpolate(BrushStroke brushStroke) {
+//    
+//    float spacing = 0.5f; // todo: move this elsewhere
+//    
+//    return;
+//}

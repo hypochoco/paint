@@ -9,64 +9,44 @@
 
 #include <vector>
 
-#include "paint/render.h"
 #include "paint/worker.h"
 #include "paint/tool.h"
 
-class RenderWorker; // forward declarations
-struct RenderJob; // forward declarations
-struct BrushStroke; // forward declarations
+class RenderWorker; // forward declaration
+struct BrushStroke; // forward delcaration
 
 // nodes
 
 struct Node {
+    ~Node() = default;
     std::vector<Node*> children;
     virtual void execute(RenderWorker* worker) {};
 };
 
 struct CameraNode : public Node {
-    CameraNode(float x, float y, float z, float aspect)
-        : x(x), y(y), z(z), aspect(aspect) {}
-    float x, y, z, aspect;
     void execute(RenderWorker* worker) override;
 };
 
 struct BrushNode : public Node {
-    float x, y, z;
-    uint32_t width, height;
-    BrushStroke brushStroke;
-    BrushNode(float x, float y, float z,
-              uint32_t width, uint32_t height,
-              BrushStroke brushStroke)
-        : x(x), y(y), z(z),
-        width(width), height(height),
-        brushStroke(brushStroke) {}
+    BrushStroke* brushStroke;
+    BrushNode(BrushStroke* brushStroke) : brushStroke(brushStroke) {}
     void execute(RenderWorker* worker) override;
 };
 
 // events
 
 struct Event {
-    virtual void build(Node* node) {}
+    virtual ~Event() = default;
+    virtual void build(Node* node) = 0;
 };
 
 struct CameraEvent : public Event {
-    CameraEvent(float x, float y, float z, float aspect)
-        : x(x), y(y), z(z), aspect(aspect) {}
-    float x, y, z, aspect;
     void build(Node* node) override;
 };
 
 struct BrushEvent : public Event {
-    float x, y, z;
-    uint32_t width, height;
-    BrushStroke brushStroke;
-    BrushEvent(float x, float y, float z,
-               uint32_t width, uint32_t height,
-               BrushStroke brushStroke)
-        : x(x), y(y), z(z),
-        width(width), height(height),
-        brushStroke(brushStroke) {}
+    BrushStroke* brushStroke;
+    BrushEvent(BrushStroke* brushStroke) : brushStroke(brushStroke) {}
     void build(Node* node) override;
 };
 
@@ -75,35 +55,28 @@ struct BrushEvent : public Event {
 struct FrameGraph {
     
     FrameGraph() {};
+    
+    uint32_t imageIndex;
+    uint32_t currentFrame;
+    
+    float cx, cy, cz; // camera positions
+    float windowAspect;
         
+    Node* root;
     std::vector<Event*> events;
-    std::vector<Node*> nodes;
     
-    void add(Event* event) { // add events
-        events.push_back(event);
+    void addCameraEvent() {
+        events.emplace_back(new CameraEvent {});
     }
     
-    void addCameraEvent(float x, float y, float z, float aspect) {
-        add(new CameraEvent { x, y, z, aspect });
-    }
-    
-    void addBrushEvent(float x, float y, float z,
-                       uint32_t width, uint32_t height,
-                       BrushStroke brushStroke) {
-        add(new BrushEvent {
-            x, y, z,
-            width, height,
-            brushStroke
-        });
+    void addBrushEvent(BrushStroke* brushStroke) {
+        events.emplace_back(new BrushEvent { brushStroke });
     }
     
     void build() {
-        Node* root = new Node;
+        root = new Node;
         for (Event* event : events) {
             event->build(root);
-        }
-        for (Node* node : root->children) { // todo: remove
-            nodes.push_back(node);
         }
     }
 
@@ -115,16 +88,21 @@ struct FrameGraph {
         return size() == 0;
     }
     
+    void deleteNode(Node* node) { // note: recursive delete
+        if (!node) return;
+        for (Node* child : node->children) {
+            deleteNode(child);
+        }
+        delete node;
+    }
+    
     void clear() {
         for (Event* event : events) {
             delete event;
         }
         events.clear();
-        
-        for (Node* node : nodes) { // todo: tree deletion
-            delete node;
-        }
-        nodes.clear();
+        deleteNode(root);
+        root = nullptr;
     }
 
 };
