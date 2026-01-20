@@ -12,6 +12,9 @@
 #include <stdexcept>
 #include <iostream>
 #include <chrono>
+#include <QPushButton>
+#include <QVBoxLayout>
+#include <QWidget>
 
 MainWindow::MainWindow() {
     createMenus();
@@ -39,6 +42,19 @@ void MainWindow::createDockPanels() {
     
     QDockWidget* colorDock = new QDockWidget("Colors", this);
     colorDock->setMinimumWidth(360);
+    QWidget* colorWidget = new QWidget(colorDock);
+    QVBoxLayout* colorLayout = new QVBoxLayout(colorWidget);
+    QPushButton* colorButton = new QPushButton(colorWidget);
+    colorButton->setFixedSize(30, 30);
+    colorButton->setStyleSheet(
+        "QPushButton {"
+        "background-color: #3498db;"
+        "border-radius: 15px;"
+        "}"
+    );
+    colorLayout->addWidget(colorButton, 0, Qt::AlignTop | Qt::AlignLeft);
+    colorWidget->setLayout(colorLayout);
+    colorDock->setWidget(colorWidget);
     addDockWidget(Qt::RightDockWidgetArea, colorDock);
     
     QDockWidget* layersDock = new QDockWidget("Layers", this);

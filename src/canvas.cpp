@@ -14,6 +14,10 @@
 //}
 
 bool Canvas::event(QEvent* event) {
+    
+    if (event->type() == QEvent::UpdateRequest) {
+        return true;
+    }
 
     if (event->type() == QEvent::PlatformSurface) {
         auto *surfaceEvent = static_cast<QPlatformSurfaceEvent *>(event);
@@ -22,11 +26,13 @@ bool Canvas::event(QEvent* event) {
             case QPlatformSurfaceEvent::SurfaceCreated:
                 qDebug() << "[canvas] surface created event";
                 emit surfaceCreated(this);
+                return true;
                 break;
                 
             case QPlatformSurfaceEvent::SurfaceAboutToBeDestroyed: // on close
                 qDebug() << "[canvas] surface about to be destroyed event";
                 emit surfaceAboutToBeDestroyed();
+                return true;
                 break;
                 
             default:
@@ -72,6 +78,11 @@ void Canvas::mouseMoveEvent(QMouseEvent *event) {
 void Canvas::onRequestUpdate() {
     qDebug() << "[canvas] update requested";
     requestUpdate();
+        
+//#ifdef Q_OS_MACOS
+//    QCoreApplication::processEvents();
+//    QTest.qWait(1)
+//#endif
 }
 
 

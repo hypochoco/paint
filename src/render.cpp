@@ -285,7 +285,6 @@ void RenderSystem::render() {
     currentFrameGraph()->currentFrame = graphics->currentFrame;
         
     emit queueRender(currentFrameGraph());
-    emit requestUpdate();
     
     graphics->advanceFrame(); // note: only for functions in this scope
     
@@ -298,7 +297,8 @@ void RenderSystem::onPresent(FrameGraph* frameGraph) {
                                frameGraph->currentFrame)) {
         resized = true;
     }
-    frameGraph->clear();
+    frameGraph->clear();    
+    emit requestUpdate();
 }
 
 void RenderSystem::cleanup() {

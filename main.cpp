@@ -72,13 +72,10 @@ int main(int argc, char *argv[]) {
     
     QObject::connect(canvas, &Canvas::surfaceAboutToBeDestroyed,
                      renderSystem, &RenderSystem::onSurfaceAbobutToBeDestroyed);
-    
-    // todo: move off the timer
-    
+        
     QObject::connect(renderSystem, &RenderSystem::requestUpdate,
                      canvas, &Canvas::onRequestUpdate);
 
-    
     QObject::connect(canvas, &Canvas::leftButtonPressed,
                      toolSystem, &ToolSystem::leftButtonPressed);
  
@@ -88,10 +85,8 @@ int main(int argc, char *argv[]) {
     QObject::connect(canvas, &Canvas::mouseMoved,
                      toolSystem, &ToolSystem::mouseMoved);
     
-    
     QObject::connect(renderSystem, &RenderSystem::queryToolSystem,
                      toolSystem, &ToolSystem::onQuery);
-    
     
     QObject::connect(toolSystem, &ToolSystem::submitActions,
                      renderSystem, &RenderSystem::onActions);

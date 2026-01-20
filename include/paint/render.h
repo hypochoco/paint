@@ -55,6 +55,7 @@ public:
         connect(timer, &QTimer::timeout,
                 this, &RenderSystem::render,
                 Qt::QueuedConnection);
+        
         timer->start(16); // 16ms interval (~60fps)
     }
     
