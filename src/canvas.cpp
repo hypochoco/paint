@@ -7,11 +7,13 @@
 
 #include "paint/canvas.h"
 
-//void Canvas::exposeEvent(QExposeEvent *event) {
-//    qDebug() << "[canvas] exposed event";
-//    QWindow::exposeEvent(event);
-//    emit exposed(isExposed());
-//}
+void Canvas::exposeEvent(QExposeEvent *event) {
+    qDebug() << "[canvas] exposed event";
+    QWindow::exposeEvent(event);
+    if (isExposed()) {
+        requestUpdate();
+    }
+}
 
 bool Canvas::event(QEvent* event) {
     
@@ -79,10 +81,13 @@ void Canvas::onRequestUpdate() {
     qDebug() << "[canvas] update requested";
     requestUpdate();
         
+    // todo: potentialy fix for low power update halting, not working
+    
 //#ifdef Q_OS_MACOS
 //    QCoreApplication::processEvents();
 //    QTest.qWait(1)
 //#endif
+    
 }
 
 

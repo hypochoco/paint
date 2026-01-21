@@ -10,7 +10,7 @@
 #include <QWindow>
 #include <QVulkanInstance>
 
-//#include <QExposeEvent>
+#include <QExposeEvent>
 #include <QEvent>
 #include <QResizeEvent>
 #include <QMouseEvent>
@@ -24,7 +24,7 @@ public:
         setSurfaceType(QSurface::VulkanSurface);
     }
     
-//    void exposeEvent(QExposeEvent *event) override;
+    void exposeEvent(QExposeEvent *event) override;
     bool event(QEvent* event) override;
     void resizeEvent(QResizeEvent* event) override;
     void mousePressEvent(QMouseEvent* event) override;
