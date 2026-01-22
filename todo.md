@@ -1,26 +1,13 @@
 
 # Current development notes
 
-- [ ] [BUG] Sometimes brush stops stamping
-    - [ ] Reiszing appears to update canvas with all the missed changes
-    - [ ] Source: low power mode on mac
-    - [ ] Force some kind of refresh ?
-
-- [ ] Refactor the render loop
-    - [ ] Remove the timer ?
-    - [ ] Frame ready
-    - [ ] Request frame update ? 
-    - [ ] Force some kind of update request for low power mode issue ?
-    
-    - [ ] Clean up the entire rendering process somehow ... 
-
-- [ ] Move stamping to brush engine 
+- [ ] Complete refactor
 
 - [ ] Setup brush functionality
     - [x] Start brush action
     - [x] End brush action
     - [x] Interpolation in between
-        - [ ] update so that at least some of the brush stamp can be reused 
+        - [ ] Update so that some of brush stamps can be reused ? 
     - [x] Brush history
     - [ ] Brush undo button  
     
@@ -33,9 +20,7 @@ Painting application:
 
 - [ ] Tooling system
     - [ ] Brush tool
-        - [ ] Brush functions / mouse down and released
     - [ ] Zoom tool
-        - [ ] GPU acceleration with zooming in and out ...   
     
 # Long term features
 

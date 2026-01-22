@@ -9,7 +9,6 @@
 
 #include <QMainWindow>
 
-//#include <QPaintEvent>       // For paintEvent()
 //#include <QResizeEvent>      // For resizeEvent()
 //#include <QMouseEvent>       // For mouse input
 //#include <QKeyEvent>         // For keyboard input

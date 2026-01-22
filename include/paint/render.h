@@ -16,26 +16,81 @@
 
 #include <iostream>
 #include <stdexcept>
+#include <algorithm>
 
 #include <engine/graphics/graphics.h>
 
-#include "paint/worker.h"
+#include "paint/actions.h"
 #include "paint/graph.h"
-#include "paint/tool.h"
+#include "paint/worker.h"
+#include "paint/brush.h"
+#include "paint/camera.h"
 
 struct Action; // forward declaration
-struct BrushPoint; // forward declaration
-struct BrushStroke; // forward declaration
 struct FrameGraph; // forward declaration
 class RenderWorker; // forward declaration
 
-struct Camera {
-    float x, y, z;
+enum DirtyFlag {
+    RESIZED,
+    CAMERA,
+    ACTIONS
 };
 
-struct StampPushConstant {
-    float pos[2];
-    float size[2];
+class DirtyFlags {
+    
+public:
+    void init(uint32_t maxFramesInFlight) {
+        camera.resize(maxFramesInFlight);
+    }
+
+    void set(DirtyFlag flag) {
+        switch (flag) {
+            case DirtyFlag::RESIZED:
+                qDebug() << "[dirty flags] set resized flag";
+                resized = true;
+                camera.assign(camera.size(), true);
+                break;
+            default:
+                qDebug() << "[dirty flags] warning: flag not implemented";
+                break;
+        }
+    }
+    
+    void clear(int frame) {
+        resized = false;
+        camera[frame] = false;
+    }
+    
+    bool dirty() {
+        return resized
+        || std::any_of(camera.begin(), camera.end(), [](bool b){ return b; });
+    }
+    
+    bool dirty(DirtyFlag flag) {
+        switch (flag) {
+            case DirtyFlag::RESIZED:
+                return resized;
+            default:
+                qDebug() << "[dirty flags] warning: flag not implemented";
+                return false;
+        }
+    }
+    
+    bool dirty(DirtyFlag flag, int currentFrame) {
+        switch (flag) {
+            case DirtyFlag::CAMERA:
+                qDebug() << "[dirty flags] camera flag: " << camera[currentFrame];
+                return camera[currentFrame];
+            default:
+                qDebug() << "[dirty flags] warning: flag not implemented";
+                return false;
+        }
+    }
+    
+private:
+    bool resized;
+    std::vector<bool> camera;
+
 };
 
 class RenderSystem : public QObject {
@@ -45,105 +100,77 @@ public:
     RenderSystem(QVulkanInstance* inst);
     ~RenderSystem();
     
-    Graphics* graphics;
-    Camera* camera;
-    std::vector<FrameGraph*> frameGraphs;
-    
     void start() {
         qDebug() << "[render system] started";
-        timer = new QTimer(this);
-        connect(timer, &QTimer::timeout,
-                this, &RenderSystem::render,
-                Qt::QueuedConnection);
-        // note: 32ms for temp purposes
-        timer->start(32); // 16ms interval (~60fps)
+        connect(&timer, &QTimer::timeout,
+                this, &RenderSystem::update);
+        // note: 16ms interval (~60fps)
+        timer.start(32); // note: 32 for testing
     }
     
     void stop() {
         qDebug() << "[render system] stopped";
-        timer->stop();
-        timer->disconnect(this);
+        timer.stop();
+        timer.disconnect();
     }
-    
-    void init();
-    void render();
-    void cleanup();
-    
-    void updateCamera(uint32_t currentFrame);
-    void stamp(VkCommandBuffer& commandBuffer, std::vector<BrushPoint> stamps);
-    
+        
 public slots:
     void onSurfaceCreated(QWindow* window) {
         qDebug() << "[render system] surface set";
         graphics->setSurface(QVulkanInstance::surfaceForWindow(window));
         surfaceCreated = true;
     }
-    void onExposed(bool isExposed) { // todo
-        if (isExposed) {
-            start();
-        } else {
-            stop();
-        }
-    }
     void onResized(uint32_t width, uint32_t height) {
         qDebug() << "[render system] surface resized";
-        this->windowWidth = width;
-        this->windowHeight = height;
-        this->windowAspect = width / (float) height;
-        resized = true;
+        dirtyFlags.set(DirtyFlag::RESIZED);
     }
-    void onPresent(FrameGraph* frameGraph);
+    void onExposed(bool isExposed) {
+        exposed = isExposed;
+    }
     void onSurfaceAbobutToBeDestroyed() {
         qDebug() << "[render system] surface about to be destroyed";
         cleanup();
     }
-    void onActions(std::vector<Action*> actions) {
-        qDebug() << "[render system] on actions";
-        this->actions = actions;
+
+    void onFrameReady(FrameGraph frameGraph) {
+        submitFrame(frameGraph);
     }
     
+private slots:
+    void update();
+    
 signals:
+    void queryWindowSize(std::function<void(int, int)> reply);
+    void queryActions(); // todo: callback
+    
+    void queueFrame(FrameGraph frameGraph);
     void requestUpdate();
-    void queueRender(FrameGraph* frameGraph);
-    void queryToolSystem();
-        
+    
 private:
+    QTimer timer;
+    
     QVulkanInstance* inst;
+    Graphics* graphics;
+    BrushEngine* brushEngine;
     QThread* renderThread;
     RenderWorker* renderWorker;
     
-    QTimer* timer;
-    
-    // todo: canvas data struct 
-    
     bool surfaceCreated;
+    bool exposed;
     bool initialized;
     
-    uint32_t windowWidth, windowHeight;
-    float windowAspect;
-    bool resized;
-    std::vector<bool> cameraDirty;
+    Camera camera;
+    DirtyFlags dirtyFlags;
     
-    std::vector<Action*> actions;
-    
-    uint32_t canvasWidth = 1024;
+    uint32_t canvasWidth = 1024; // todo: canvas data struct
     uint32_t canvasHeight = 1024;
-    
+        
     void initCanvas();
-    void initStamp();
-    void initCamera();
-    void initFrameGraphs();
-    FrameGraph* currentFrameGraph() {
-        return frameGraphs[graphics->currentFrame];
-    }
-    void recordFrameGraph();
+    void init();
+        
+    void startFrame();
+    void submitFrame(FrameGraph frameGraph);
     
-    VkRenderPass stampRenderPass;
-    VkFramebuffer stampFrameBuffer;
-    VkDescriptorSetLayout stampDescriptorSetLayout;
-    VkDescriptorPool stampDescriptorPool;
-    std::vector<VkDescriptorSet> stampDescriptorSets;
-    VkPipeline stampPipeline;
-    VkPipelineLayout stampPipelineLayout;
-
+    void cleanup();
+    
 };

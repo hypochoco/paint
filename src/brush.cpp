@@ -7,78 +7,198 @@
 
 #include "paint/brush.h"
 
-glm::vec2 BrushEngine::screenToWorldSpace(float cx, float cy, float cz,
-                                                     uint32_t width, uint32_t height,
-                                                     float x, float y) {
+#include "paint/utils.h"
+
+//glm::vec2 BrushEngine::screenToWorldSpace(float cx, float cy, float cz,
+//                                                     uint32_t width, uint32_t height,
+//                                                     float x, float y) {
+//    
+//    float ndcX = (x / (float) width) * 2.0f - 1.0f;
+//    float ndcY = 1.0f - (y / (float) height) * 2.0f;
+//
+//    float aspect = width / (float) height; // window aspect
+//    float tanHalfFovy = 0.4142f; // hard coded for 45 deg
+//
+//    return {
+//        ndcX * cz * tanHalfFovy * aspect + cx,
+//        ndcY * cz * tanHalfFovy + cy
+//    };
+//
+//}
+//
+//std::vector<BrushPoint> BrushEngine::interpolate(BrushStroke* brushStroke,
+//                                                 float cx, float cy, float cz,
+//                                                 uint32_t width, uint32_t height) {
+//    
+//    // todo: a lot of wasted computation ?
+//    
+//    // todo: qt stopping issue is more prevalent, figure out where this is coming from 
+//    
+//    float spacing = 0.05f; // temp
+//    float carry = 0.0f;
+//
+//    std::vector<BrushPoint> stamps;
+//    if (brushStroke->rawBrushPoints.empty()) return stamps;
+//
+//    BrushPoint lastInput = brushStroke->rawBrushPoints[0];
+//    lastInput.position = screenToWorldSpace(
+//        cx, cy, cz, width, height,
+//        lastInput.position.x, lastInput.position.y
+//    );
+//
+//    if (brushStroke->submitedIndex == 0) {
+//        stamps.push_back(lastInput);
+//    }
+//
+//    for (size_t i = 1; i < brushStroke->rawBrushPoints.size(); ++i) {
+//
+//        BrushPoint current = brushStroke->rawBrushPoints[i];
+//        current.position = screenToWorldSpace(
+//            cx, cy, cz, width, height,
+//            current.position.x, current.position.y
+//        );
+//
+//        glm::vec2 segment = current.position - lastInput.position;
+//        float segLen = glm::length(segment);
+//
+//        if (segLen == 0.0f) {
+//            lastInput = current;
+//            continue;
+//        }
+//
+//        glm::vec2 dir = segment / segLen;
+//        float traveled = 0.0f;
+//
+//        while (traveled + spacing - carry <= segLen) {
+//            float step = spacing - carry;
+//            traveled += step;
+//            if (i > brushStroke->submitedIndex) {
+//                stamps.push_back(BrushPoint(lastInput.position + dir * traveled));
+//            }
+//            carry = 0.0f;
+//        }
+//
+//        carry += segLen - traveled;
+//        lastInput = current;
+//    }
+//
+//    return stamps;
+//}
+
+void BrushEngine::init() {
     
-    float ndcX = (x / (float) width) * 2.0f - 1.0f;
-    float ndcY = 1.0f - (y / (float) height) * 2.0f;
+    graphics->createRenderPass(stampRenderPass,
+                               VK_ATTACHMENT_LOAD_OP_LOAD);
 
-    float aspect = width / (float) height; // window aspect
-    float tanHalfFovy = 0.4142f; // hard coded for 45 deg
+    graphics->createDescriptorSetLayout(stampDescriptorSetLayout);
+    graphics->createDescriptorPool(stampDescriptorPool);
 
-    return {
-        ndcX * cz * tanHalfFovy * aspect + cx,
-        ndcY * cz * tanHalfFovy + cy
-    };
+    auto stampVertShaderCode = Graphics::readFile(resolveBundlePath("brush_vert.spv"));
+    auto stampFragShaderCode = Graphics::readFile(resolveBundlePath("brush_frag.spv"));
+
+    VkShaderModule stampVertShaderModule = graphics->createShaderModule(stampVertShaderCode);
+    VkShaderModule stampFragShaderModule = graphics->createShaderModule(stampFragShaderCode);
+
+    VkPipelineShaderStageCreateInfo stampVertShaderStageInfo{};
+    stampVertShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+    stampVertShaderStageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
+    stampVertShaderStageInfo.module = stampVertShaderModule;
+    stampVertShaderStageInfo.pName = "main";
+
+    VkPipelineShaderStageCreateInfo stampFragShaderStageInfo{};
+    stampFragShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+    stampFragShaderStageInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+    stampFragShaderStageInfo.module = stampFragShaderModule;
+    stampFragShaderStageInfo.pName = "main";
+
+    VkPipelineShaderStageCreateInfo stampShaderStages[] = { stampVertShaderStageInfo, stampFragShaderStageInfo };
+
+    VkPushConstantRange pushConstantRange{};
+    pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+    pushConstantRange.offset = 0;
+    pushConstantRange.size = sizeof(StampPushConstant); // pos(vec2) + size(vec2) => 4 floats
+
+    graphics->createPipeline(stampPipeline,
+                             stampDescriptorSetLayout,
+                             stampPipelineLayout,
+                             stampRenderPass,
+                             stampShaderStages,
+                             pushConstantRange);
+
+    graphics->destroyShaderModule(stampVertShaderModule);
+    graphics->destroyShaderModule(stampFragShaderModule);
+    
+    // temp: default texture stamp
+
+    graphics->loadTexture(resolveBundlePath("brush.png"),
+                          VK_IMAGE_USAGE_TRANSFER_SRC_BIT
+                          | VK_IMAGE_USAGE_TRANSFER_DST_BIT
+                          | VK_IMAGE_USAGE_SAMPLED_BIT,
+                          1);
+
+    graphics->createDescriptorSets(graphics->textureImageViews[1], // temp
+                                   stampDescriptorSets,
+                                   stampDescriptorSetLayout,
+                                   stampDescriptorPool);
+
+    graphics->createFramebuffer(stampFrameBuffer,
+                                stampRenderPass,
+                                graphics->textureImageViews[0], // temp
+                                (int) 1024, // canvas width
+                                (int) 1024); // canvas height
 
 }
 
-std::vector<BrushPoint> BrushEngine::interpolate(BrushStroke* brushStroke,
-                                                 float cx, float cy, float cz,
-                                                 uint32_t width, uint32_t height) {
+
+//void BrushEngine::stamp(VkCommandBuffer& commandBuffer, std::vector<BrushPoint> stamps) {
+//    
+//    graphics->recordBeginRenderPass(commandBuffer,
+//                                    stampRenderPass,
+//                                    stampFrameBuffer,
+//                                    canvasWidth,
+//                                    canvasHeight,
+//                                    stampPipeline);
+//    
+//    graphics->recordSetViewport(commandBuffer,
+//                                0.0f,
+//                                0.0f,
+//                                canvasWidth,
+//                                canvasHeight);
+//
+//    graphics->recordBindDescriptorSet(commandBuffer,
+//                                      stampPipelineLayout,
+//                                      stampDescriptorSets);
+//
+//    graphics->recordSetScissor(commandBuffer,
+//                               0.0f,
+//                               0.0f,
+//                               canvasWidth,
+//                               canvasHeight);
+//    
+//    for (BrushPoint stamp : stamps) {
+//        
+//        StampPushConstant pc { { stamp.position.x, stamp.position.y }, { 0.25f, 0.25f } };
+//
+//        graphics->recordPushConstant(commandBuffer,
+//                                     stampPipelineLayout,
+//                                     sizeof(pc),
+//                                     &pc);
+//
+//        graphics->recordDraw(commandBuffer);
+//        
+//    }
+//
+//    graphics->recordEndRenderPass(commandBuffer);
+//
+//}
+
+void BrushEngine::cleanup() {
     
-    // todo: a lot of wasted computation ?
+    graphics->destroyPipeline(stampPipeline);
+    graphics->destroyPipelineLayout(stampPipelineLayout);
+    graphics->destroyRenderPass(stampRenderPass);
+    graphics->destroyFrameBuffer(stampFrameBuffer);
+    graphics->destroyDescriptorPool(stampDescriptorPool);
+    graphics->destroyDescriptorSetLayout(stampDescriptorSetLayout);
     
-    // todo: qt stopping issue is more prevalent, figure out where this is coming from 
-    
-    float spacing = 0.05f; // temp
-    float carry = 0.0f;
-
-    std::vector<BrushPoint> stamps;
-    if (brushStroke->rawBrushPoints.empty()) return stamps;
-
-    BrushPoint lastInput = brushStroke->rawBrushPoints[0];
-    lastInput.position = screenToWorldSpace(
-        cx, cy, cz, width, height,
-        lastInput.position.x, lastInput.position.y
-    );
-
-    if (brushStroke->submitedIndex == 0) {
-        stamps.push_back(lastInput);
-    }
-
-    for (size_t i = 1; i < brushStroke->rawBrushPoints.size(); ++i) {
-
-        BrushPoint current = brushStroke->rawBrushPoints[i];
-        current.position = screenToWorldSpace(
-            cx, cy, cz, width, height,
-            current.position.x, current.position.y
-        );
-
-        glm::vec2 segment = current.position - lastInput.position;
-        float segLen = glm::length(segment);
-
-        if (segLen == 0.0f) {
-            lastInput = current;
-            continue;
-        }
-
-        glm::vec2 dir = segment / segLen;
-        float traveled = 0.0f;
-
-        while (traveled + spacing - carry <= segLen) {
-            float step = spacing - carry;
-            traveled += step;
-            if (i > brushStroke->submitedIndex) {
-                stamps.push_back(BrushPoint(lastInput.position + dir * traveled));
-            }
-            carry = 0.0f;
-        }
-
-        carry += segLen - traveled;
-        lastInput = current;
-    }
-
-    return stamps;
 }

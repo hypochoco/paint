@@ -7,62 +7,65 @@
 
 #include "paint/worker.h"
 
-#include "paint/brush.h"
-
-RenderWorker::RenderWorker(RenderSystem* renderSystem) {
-    this->renderSystem = renderSystem; // todo: remove ?
-    this->graphics = renderSystem->graphics;
-}
-
-void RenderWorker::updateCamera() {
-    qDebug() << "[render worker] update camera";
+void RenderWorker::processCameraNode(FrameGraph* frameGraph) {
+    qDebug() << "[render worker] processing camera node";
     
     glm::mat4 view, proj;
-    view = glm::lookAt(glm::vec3(frameGraph->cx, frameGraph->cy, frameGraph->cz), // camera pos
-                       glm::vec3(frameGraph->cx, frameGraph->cy, 0.0f), // look at
+    view = glm::lookAt(frameGraph->camera.position, // camera pos
+                       glm::vec3(frameGraph->camera.position.x,
+                                 frameGraph->camera.position.y,
+                                 0.0f), // look at
                        glm::vec3(0.0f, 1.0f, 0.0f)); // up
     proj = glm::perspective(glm::radians(45.0f), // fovy
-                            frameGraph->windowAspect,
+                            frameGraph->windowWidth / (float) frameGraph->windowHeight,
                             0.1f, // near
                             10.0f); // far
     proj[1][1] *= -1; // strange projection fix
-    
+
     graphics->updateGlobalUBO(frameGraph->currentFrame, view, proj);
+
 }
 
-void RenderWorker::processBrush(BrushStroke* brushStroke) {
-    qDebug() << "[render worker] process brush, raw brush size: "
-        << brushStroke->rawBrushPoints.size() << ", submitted index: "
-        << brushStroke->submitedIndex;
+void RenderWorker::onQueueFrame(FrameGraph frameGraph) {
+    qDebug() << "[render worker] frame graph: \n" << frameGraph;
     
-    if (brushStroke->processed) return;
-    if (brushStroke->submitedIndex == brushStroke->rawBrushPoints.size() - 1) return;
+    frameGraph.build();
     
-    // todo: move pipelines to brush engine
+    graphics->beginCommandBuffer(frameGraph.currentFrame);
     
-    renderSystem->stamp(graphics->commandBuffers[frameGraph->currentFrame],
-                        BrushEngine::interpolate(brushStroke,
-                                                 frameGraph->cx, frameGraph->cy, frameGraph->cz,
-                                                 frameGraph->windowWidth, frameGraph->windowHeight));
+    dfs(frameGraph.root, [&frameGraph, this](Node* node) { node->process(&frameGraph, this); });
     
+    graphics->recordSwapChainCommandBuffer(frameGraph.currentFrame);
+    graphics->endCommandBuffer(frameGraph.currentFrame);
+    
+    frameGraph.cleanup();
+    
+    // todo: consider caching brushstroke information in the worker ?
+    
+    emit frameReady(frameGraph);
 }
 
-void RenderWorker::traverse(Node* node) {
-    if (!node) return;
-    for (Node* child : node->children) {
-        traverse(child);
-    }
-    node->execute(this);
-}
+//void RenderWorker::processBrush(BrushStroke* brushStroke) {
+//    qDebug() << "[render worker] process brush, raw brush size: "
+//        << brushStroke->rawBrushPoints.size() << ", submitted index: "
+//        << brushStroke->submitedIndex;
+//    
+//    if (brushStroke->processed) return;
+//    if (brushStroke->submitedIndex == brushStroke->rawBrushPoints.size() - 1) return;
+//    
+//    // todo: move pipelines to brush engine
+//    
+//    renderSystem->stamp(graphics->commandBuffers[frameGraph->currentFrame],
+//                        BrushEngine::interpolate(brushStroke,
+//                                                 frameGraph->cx, frameGraph->cy, frameGraph->cz,
+//                                                 frameGraph->windowWidth, frameGraph->windowHeight));
+//    
+//}
 
-void RenderWorker::onRender(FrameGraph* frameGraph) {
-    this->frameGraph = frameGraph;
-    this->frameGraph->build();
-        
-    graphics->beginCommandBuffer(this->frameGraph->currentFrame);
-    traverse(this->frameGraph->root);
-    graphics->recordSwapChainCommandBuffer(this->frameGraph->currentFrame);
-    graphics->endCommandBuffer(this->frameGraph->currentFrame);
-    
-    emit queuePresent(this->frameGraph);
-}
+//void RenderWorker::traverse(Node* node) { // todo: rename as dfs, doesn't need to be in the class ?
+//    if (!node) return;
+//    for (Node* child : node->children) {
+//        traverse(child);
+//    }
+//    node->execute(this);
+//}

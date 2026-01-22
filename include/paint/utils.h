@@ -7,4 +7,10 @@
 
 #include <string>
 
+#include <array>
+#include <cstddef>
+#include <stdexcept>
+
+bool isLowPowerModeEnabled();
+
 std::string resolveBundlePath(const std::string& resourceName);

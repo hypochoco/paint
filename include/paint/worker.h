@@ -7,31 +7,30 @@
 
 #pragma once
 
-#include "paint/render.h"
-#include "paint/tool.h"
+#include <engine/graphics/graphics.h>
 
-struct Node; // forward declaration
-class RenderSystem; // forward declaration
+#include "paint/brush.h"
+#include "paint/graph.h"
+
+struct FrameGraph; // forward declaration
 
 class RenderWorker : public QObject {
     Q_OBJECT
     
 public:
-    RenderWorker(RenderSystem* renderSystem);
+    RenderWorker(Graphics* graphics, BrushEngine* brushEngine)
+    : graphics(graphics), brushEngine(brushEngine) {}
     
-    void updateCamera();
-    void processBrush(BrushStroke* brushStroke);
-        
+    void processCameraNode(FrameGraph* frameGraph);
+    
 public slots:
-    void onRender(FrameGraph* frameGraph);
+    void onQueueFrame(FrameGraph frameGraph);
     
 signals:
-    void queuePresent(FrameGraph* frameGraph);
-        
-private:
-    RenderSystem* renderSystem;
-    Graphics* graphics;
-    FrameGraph* frameGraph;
+    void frameReady(FrameGraph frameGraph);
     
-    void traverse(Node* node);
+private:
+    Graphics* graphics;
+    BrushEngine* brushEngine;
+    
 };

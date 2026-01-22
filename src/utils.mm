@@ -11,6 +11,13 @@
 
 #include "paint/utils.h"
 
+bool isLowPowerModeEnabled() {
+    if (@available(macOS 12.0, *)) {
+        return [[NSProcessInfo processInfo] isLowPowerModeEnabled];
+    }
+    return false;
+}
+
 std::string resolveBundlePath(const std::string& resourceName) {
     NSString* name = [NSString stringWithUTF8String:resourceName.c_str()];
     NSString* path = [[NSBundle mainBundle] pathForResource:name ofType:nil];

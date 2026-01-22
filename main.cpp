@@ -19,6 +19,8 @@
 #include "paint/tool.h" // tool system
 #include "paint/canvas.h" // vulkan canvas
 
+#include "paint/utils.h" // low power mode detection
+
 int main(int argc, char *argv[]) {
     QApplication app(argc, argv);
     
@@ -56,43 +58,52 @@ int main(int argc, char *argv[]) {
     
     // canvas
     
-    Canvas* canvas = new Canvas(inst);
-    QWidget* canvasContainer = QWidget::createWindowContainer(canvas);
-
-    // setup / start application
+    CanvasWindow* canvasWindow = new CanvasWindow(inst);
+    QWidget* canvasWindowContainer = QWidget::createWindowContainer(canvasWindow);
     
-    QObject::connect(canvas, &Canvas::surfaceCreated,
+#if defined(__APPLE__) && defined(__MACH__)
+    if (isLowPowerModeEnabled()) { // note: hack fix for low power render halting
+//        auto *watchdog = new RenderWatchdog(canvasWindowContainer);
+    }
+#endif
+    
+    // setup connections
+    
+    QObject::connect(canvasWindow, &CanvasWindow::surfaceCreated,
                      renderSystem, &RenderSystem::onSurfaceCreated);
-    
-    QObject::connect(canvas, &Canvas::exposed, // todo
-                     renderSystem, &RenderSystem::onExposed);
-    
-    QObject::connect(canvas, &Canvas::resized,
+        
+    QObject::connect(canvasWindow, &CanvasWindow::resized,
                      renderSystem, &RenderSystem::onResized);
     
-    QObject::connect(canvas, &Canvas::surfaceAboutToBeDestroyed,
+    QObject::connect(canvasWindow, &CanvasWindow::exposed,
+                     renderSystem, &RenderSystem::onExposed);
+    
+    QObject::connect(renderSystem, &RenderSystem::queryWindowSize,
+                     canvasWindow, &CanvasWindow::onQueryWindowSize);
+    
+    QObject::connect(canvasWindow, &CanvasWindow::surfaceAboutToBeDestroyed,
                      renderSystem, &RenderSystem::onSurfaceAbobutToBeDestroyed);
         
     QObject::connect(renderSystem, &RenderSystem::requestUpdate,
-                     canvas, &Canvas::onRequestUpdate);
-
-    QObject::connect(canvas, &Canvas::leftButtonPressed,
+                     canvasWindow, &CanvasWindow::onRequestUpdate);
+    
+    
+    QObject::connect(canvasWindow, &CanvasWindow::leftButtonPressed,
                      toolSystem, &ToolSystem::leftButtonPressed);
  
-    QObject::connect(canvas, &Canvas::leftButtonReleased,
+    QObject::connect(canvasWindow, &CanvasWindow::leftButtonReleased,
                      toolSystem, &ToolSystem::leftButtonReleased);
     
-    QObject::connect(canvas, &Canvas::mouseMoved,
+    QObject::connect(canvasWindow, &CanvasWindow::mouseMoved,
                      toolSystem, &ToolSystem::mouseMoved);
     
-    QObject::connect(renderSystem, &RenderSystem::queryToolSystem,
-                     toolSystem, &ToolSystem::onQuery);
     
-    QObject::connect(toolSystem, &ToolSystem::submitActions,
-                     renderSystem, &RenderSystem::onActions);
+    QObject::connect(renderSystem, &RenderSystem::queryActions,
+                     toolSystem, &ToolSystem::onQueryActions);
+        
+    // start application
     
-    
-    mainWindow->setCentralWidget(canvasContainer);
+    mainWindow->setCentralWidget(canvasWindowContainer);
     mainWindow->resize(1280, 720);
     mainWindow->show();
         

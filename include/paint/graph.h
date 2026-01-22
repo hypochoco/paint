@@ -7,107 +7,86 @@
 
 #pragma once
 
-#include <vector>
+#include <QDebug>
 
-#include "paint/worker.h"
-#include "paint/tool.h"
+#include <cstdint>
 
-class RenderWorker; // forward declaration
-struct BrushStroke; // forward delcaration
+#include "paint/events.h"
+#include "paint/nodes.h"
+#include "paint/camera.h"
 
-// nodes
-
-struct Node {
-    ~Node() = default;
-    std::vector<Node*> children;
-    virtual void execute(RenderWorker* worker) {};
-    virtual void cleanup() {};
-};
-
-struct CameraNode : public Node {
-    void execute(RenderWorker* worker) override;
-};
-
-struct BrushNode : public Node {
-    BrushStroke* brushStroke;
-    BrushNode(BrushStroke* brushStroke) : brushStroke(brushStroke) {}
-    void execute(RenderWorker* worker) override;
-    void cleanup() override;
-};
-
-// events
-
-struct Event {
-    virtual ~Event() = default;
-    virtual void build(Node* node) = 0;
-};
-
-struct CameraEvent : public Event {
-    void build(Node* node) override;
-};
-
-struct BrushEvent : public Event {
-    BrushStroke* brushStroke;
-    BrushEvent(BrushStroke* brushStroke) : brushStroke(brushStroke) {}
-    void build(Node* node) override;
-};
-
-// frame graph
+struct Event; // forward declaration
+struct Node; // forward declaration
 
 struct FrameGraph {
+    uint32_t currentFrame, imageIndex;
+    int windowWidth, windowHeight;
+    Camera camera;
     
-    FrameGraph() {};
-    
-    uint32_t imageIndex;
-    uint32_t currentFrame;
-    
-    float cx, cy, cz; // camera positions
-    uint32_t windowWidth, windowHeight;
-    float windowAspect;
-        
+    std::vector<Event*> events;
     Node* root;
+    
+    void build();
+    void cleanup();
+};
+
+inline QDebug operator<<(QDebug dbg, const FrameGraph &fg) {
+    QDebugStateSaver saver(dbg);
+    dbg.nospace()
+        << "FrameGraph{"
+        << "\n\tcurrentFrame=" << fg.currentFrame
+        << ", imageIndex=" << fg.imageIndex
+        << ", \n\twindowWidth=" << fg.windowWidth
+        << ", windowHeight=" << fg.windowHeight
+        << ", \n\tcamera=" << fg.camera
+        << ", \n\tevents size=" << fg.events.size()
+        << "}";
+    return dbg;
+}
+
+struct FrameGraphBuilder {
+    
+    uint32_t imageIndex, currentFrame;
+    int windowWidth, windowHeight;
+    Camera camera;
     std::vector<Event*> events;
     
-    void addCameraEvent() {
-        events.emplace_back(new CameraEvent {});
-    }
+    FrameGraphBuilder& withImageIndex(uint32_t imageIndex) {
+        this->imageIndex = imageIndex;
+        return *this;
+    };
     
-    void addBrushEvent(BrushStroke* brushStroke) {
-        events.emplace_back(new BrushEvent { brushStroke });
-    }
+    FrameGraphBuilder& withCurrentFrame(uint32_t currentFrame) {
+        this->currentFrame = currentFrame;
+        return *this;
+    };
     
-    void build() {
-        root = new Node;
-        for (Event* event : events) {
-            event->build(root);
-        }
-    }
+    FrameGraphBuilder& withWindowWidth(int width) {
+        this->windowWidth = width;
+        return *this;
+    };
 
-    size_t size() {
-        return events.size();
-    }
+    FrameGraphBuilder& withWindowHeight(int height) {
+        this->windowHeight = height;
+        return *this;
+    };
     
-    bool empty() {
-        return size() == 0;
-    }
+    FrameGraphBuilder& withCamera(Camera camera) {
+        this->camera = camera;
+        return *this;
+    };
     
-    void deleteNode(Node* node) { // note: recursive delete
-        if (!node) return;
-        for (Node* child : node->children) {
-            deleteNode(child);
-        }
-        node->cleanup();
-        delete node;
-        node = nullptr;
-    }
-    
-    void clear() {
-        for (Event* event : events) {
-            delete event;
-        }
-        events.clear();
-        deleteNode(root);
-        root = nullptr;
-    }
+    FrameGraphBuilder& addCameraEvent();
+    FrameGraphBuilder& addBrushStrokeEvent();
 
+    FrameGraph build() {
+        return FrameGraph {
+            currentFrame,
+            imageIndex,
+            windowWidth,
+            windowHeight,
+            camera,
+            events
+        };
+    }
 };
