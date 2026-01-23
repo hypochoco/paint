@@ -50,6 +50,10 @@ public:
                 resized = true;
                 camera.assign(camera.size(), true);
                 break;
+            case DirtyFlag::ACTIONS:
+                // qDebug() << "[dirty flags] set actions flag";
+                actions = true;
+                break;
             default:
                 qDebug() << "[dirty flags] warning: flag not implemented";
                 break;
@@ -59,17 +63,22 @@ public:
     void clear(int frame) {
         resized = false;
         camera[frame] = false;
+        actions = false;
     }
     
     bool dirty() {
         return resized
-        || std::any_of(camera.begin(), camera.end(), [](bool b){ return b; });
+        || std::any_of(camera.begin(), camera.end(), [](bool b){ return b; })
+        || actions;
     }
     
     bool dirty(DirtyFlag flag) {
         switch (flag) {
             case DirtyFlag::RESIZED:
                 return resized;
+            case DirtyFlag::ACTIONS:
+                qDebug() << "[dirty flags] actions flag: " << actions;
+                return actions;
             default:
                 qDebug() << "[dirty flags] warning: flag not implemented";
                 return false;
@@ -90,6 +99,7 @@ public:
 private:
     bool resized;
     std::vector<bool> camera;
+    bool actions;
 
 };
 
@@ -120,9 +130,11 @@ public slots:
         graphics->setSurface(QVulkanInstance::surfaceForWindow(window));
         surfaceCreated = true;
     }
-    void onResized(uint32_t width, uint32_t height) {
+    void onResized(int width, int height) {
         qDebug() << "[render system] surface resized";
         dirtyFlags.set(DirtyFlag::RESIZED);
+        windowWidth = width;
+        windowHeight = height;
     }
     void onExposed(bool isExposed) {
         exposed = isExposed;
@@ -130,6 +142,10 @@ public slots:
     void onSurfaceAbobutToBeDestroyed() {
         qDebug() << "[render system] surface about to be destroyed";
         cleanup();
+    }
+    
+    void onActionsAvailable() {
+        dirtyFlags.set(DirtyFlag::ACTIONS);
     }
 
     void onFrameReady(FrameGraph frameGraph) {
@@ -140,8 +156,7 @@ private slots:
     void update();
     
 signals:
-    void queryWindowSize(std::function<void(int, int)> reply);
-    void queryActions(); // todo: callback
+    void queryActions(std::function<void(Action*)> reply);
     
     void queueFrame(FrameGraph frameGraph);
     void requestUpdate();
@@ -159,11 +174,13 @@ private:
     bool exposed;
     bool initialized;
     
-    Camera camera;
-    DirtyFlags dirtyFlags;
+    int windowWidth, windowHeight;
     
     uint32_t canvasWidth = 1024; // todo: canvas data struct
     uint32_t canvasHeight = 1024;
+    
+    Camera camera;
+    DirtyFlags dirtyFlags;
         
     void initCanvas();
     void init();

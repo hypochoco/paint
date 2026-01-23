@@ -111,7 +111,6 @@ void RenderSystem::update() {
         || graphics->getSwapChainExtent().height == 0) {
         return;
     }
-    emit queryActions(); // todo: callback
     if (!dirtyFlags.dirty()) return;
     
     // start frame if all conditions pass
@@ -139,17 +138,19 @@ void RenderSystem::startFrame() {
     FrameGraphBuilder builder;
     builder.withImageIndex(graphics->imageIndex)
         .withCurrentFrame(graphics->currentFrame)
-        .withCamera(camera);
-    emit queryWindowSize([&builder](int width, int height) {
-        builder.withWindowWidth(width)
-            .withWindowHeight(height);
-    });
-
+        .withCamera(camera)
+        .withWindowWidth(windowWidth)
+        .withWindowHeight(windowHeight);
+    
     if (dirtyFlags.dirty(DirtyFlag::CAMERA, graphics->currentFrame)) {
         builder.addCameraEvent();
     }
     
-    emit queryActions(); // todo: callback
+    if (dirtyFlags.dirty(DirtyFlag::ACTIONS)) {
+        emit queryActions([&builder](Action* action) {
+            action->addEvent(builder);
+        });
+    }
     
     dirtyFlags.clear(graphics->currentFrame);
     

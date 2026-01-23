@@ -1,15 +1,10 @@
 
 # Current development notes
 
-- [ ] Complete refactor
-
 - [ ] Setup brush functionality
-    - [x] Start brush action
-    - [x] End brush action
-    - [x] Interpolation in between
-        - [ ] Update so that some of brush stamps can be reused ? 
-    - [x] Brush history
-    - [ ] Brush undo button  
+    - [ ] Get stamping back
+    - [ ] Interpolation
+    - [ ] Action undo  
     
 ---
 

@@ -77,10 +77,7 @@ int main(int argc, char *argv[]) {
     
     QObject::connect(canvasWindow, &CanvasWindow::exposed,
                      renderSystem, &RenderSystem::onExposed);
-    
-    QObject::connect(renderSystem, &RenderSystem::queryWindowSize,
-                     canvasWindow, &CanvasWindow::onQueryWindowSize);
-    
+        
     QObject::connect(canvasWindow, &CanvasWindow::surfaceAboutToBeDestroyed,
                      renderSystem, &RenderSystem::onSurfaceAbobutToBeDestroyed);
         
@@ -97,6 +94,9 @@ int main(int argc, char *argv[]) {
     QObject::connect(canvasWindow, &CanvasWindow::mouseMoved,
                      toolSystem, &ToolSystem::mouseMoved);
     
+    
+    QObject::connect(toolSystem, &ToolSystem::actionsAvailable,
+                     renderSystem, &RenderSystem::onActionsAvailable);
     
     QObject::connect(renderSystem, &RenderSystem::queryActions,
                      toolSystem, &ToolSystem::onQueryActions);

@@ -13,6 +13,7 @@
 #include "paint/graph.h"
 
 struct FrameGraph; // forward declaration
+class BrushEngine; // forward declaration
 
 class RenderWorker : public QObject {
     Q_OBJECT

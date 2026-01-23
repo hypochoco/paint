@@ -80,7 +80,7 @@ public slots:
 signals:
     void surfaceCreated(QWindow* window);
     void surfaceAboutToBeDestroyed();
-    void resized(uint32_t width, uint32_t height);
+    void resized(int width, int height);
     void exposed(bool isExposed);
     
     void leftButtonPressed(int x, int y);

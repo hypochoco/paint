@@ -12,6 +12,10 @@
 
 #include "paint/actions.h"
 
+struct Action; // forward declaration
+template<size_t Capacity>
+class ActionBuffer; // forward declaration
+
 enum Tool {
     BRUSH
 };
@@ -20,18 +24,20 @@ class ToolSystem : public QObject {
     Q_OBJECT
     
 public:
-    ToolSystem() {
-        selectedTool = Tool::BRUSH; // temp: default tool
-    }
+    ToolSystem();
+    ~ToolSystem();
     
 public slots:
     void leftButtonPressed(int x, int y);
     void leftButtonReleased(int x, int y);
     void mouseMoved(int x, int y);
     
-    void onQueryActions();
+    void onQueryActions(std::function<void(Action*)> reply);
+    
+signals:
+    void actionsAvailable();
     
 private:
     Tool selectedTool;
-    ActionBuffer<150> actionBuffer;
+    ActionBuffer<75>* actionBuffer;
 };
