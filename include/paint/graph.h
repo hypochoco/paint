@@ -14,9 +14,11 @@
 #include "paint/events.h"
 #include "paint/nodes.h"
 #include "paint/camera.h"
+#include "paint/actions.h"
 
 struct Event; // forward declaration
 struct Node; // forward declaration
+struct BrushStrokeData; // forward declaration
 
 struct FrameGraph {
     uint32_t currentFrame, imageIndex;
@@ -77,7 +79,7 @@ struct FrameGraphBuilder {
     };
     
     FrameGraphBuilder& addCameraEvent();
-    FrameGraphBuilder& addBrushStrokeEvent();
+    FrameGraphBuilder& addBrushStrokeEvent(BrushStrokeData* brushStrokeData);
 
     FrameGraph build() {
         return FrameGraph {

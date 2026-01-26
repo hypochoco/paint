@@ -9,31 +9,90 @@
 
 #include "paint/utils.h"
 
-//glm::vec2 BrushEngine::screenToWorldSpace(float cx, float cy, float cz,
-//                                                     uint32_t width, uint32_t height,
-//                                                     float x, float y) {
-//    
-//    float ndcX = (x / (float) width) * 2.0f - 1.0f;
-//    float ndcY = 1.0f - (y / (float) height) * 2.0f;
-//
-//    float aspect = width / (float) height; // window aspect
-//    float tanHalfFovy = 0.4142f; // hard coded for 45 deg
-//
-//    return {
-//        ndcX * cz * tanHalfFovy * aspect + cx,
-//        ndcY * cz * tanHalfFovy + cy
-//    };
-//
-//}
-//
+void BrushEngine::init() {
+    
+    graphics->createRenderPass(stampRenderPass,
+                               VK_ATTACHMENT_LOAD_OP_LOAD);
+
+    graphics->createDescriptorSetLayout(stampDescriptorSetLayout);
+    graphics->createDescriptorPool(stampDescriptorPool);
+
+    auto stampVertShaderCode = Graphics::readFile(resolveBundlePath("brush_vert.spv"));
+    auto stampFragShaderCode = Graphics::readFile(resolveBundlePath("brush_frag.spv"));
+
+    VkShaderModule stampVertShaderModule = graphics->createShaderModule(stampVertShaderCode);
+    VkShaderModule stampFragShaderModule = graphics->createShaderModule(stampFragShaderCode);
+
+    VkPipelineShaderStageCreateInfo stampVertShaderStageInfo{};
+    stampVertShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+    stampVertShaderStageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
+    stampVertShaderStageInfo.module = stampVertShaderModule;
+    stampVertShaderStageInfo.pName = "main";
+
+    VkPipelineShaderStageCreateInfo stampFragShaderStageInfo{};
+    stampFragShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+    stampFragShaderStageInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+    stampFragShaderStageInfo.module = stampFragShaderModule;
+    stampFragShaderStageInfo.pName = "main";
+
+    VkPipelineShaderStageCreateInfo stampShaderStages[] = { stampVertShaderStageInfo, stampFragShaderStageInfo };
+
+    VkPushConstantRange pushConstantRange{};
+    pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+    pushConstantRange.offset = 0;
+    pushConstantRange.size = sizeof(StampPushConstant);
+
+    graphics->createPipeline(stampPipeline,
+                             stampDescriptorSetLayout,
+                             stampPipelineLayout,
+                             stampRenderPass,
+                             stampShaderStages,
+                             pushConstantRange);
+
+    graphics->destroyShaderModule(stampVertShaderModule);
+    graphics->destroyShaderModule(stampFragShaderModule);
+    
+    // temp: default texture stamp
+
+    graphics->loadTexture(resolveBundlePath("brush.png"),
+                          VK_IMAGE_USAGE_TRANSFER_SRC_BIT
+                          | VK_IMAGE_USAGE_TRANSFER_DST_BIT
+                          | VK_IMAGE_USAGE_SAMPLED_BIT,
+                          1);
+
+    graphics->createDescriptorSets(graphics->textureImageViews[1], // temp
+                                   stampDescriptorSets,
+                                   stampDescriptorSetLayout,
+                                   stampDescriptorPool);
+
+    graphics->createFramebuffer(stampFrameBuffer,
+                                stampRenderPass,
+                                graphics->textureImageViews[0], // temp
+                                (int) 1024, // canvas width
+                                (int) 1024); // canvas height
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 //std::vector<BrushPoint> BrushEngine::interpolate(BrushStroke* brushStroke,
 //                                                 float cx, float cy, float cz,
 //                                                 uint32_t width, uint32_t height) {
-//    
+//
 //    // todo: a lot of wasted computation ?
-//    
-//    // todo: qt stopping issue is more prevalent, figure out where this is coming from 
-//    
+//
 //    float spacing = 0.05f; // temp
 //    float carry = 0.0f;
 //
@@ -85,112 +144,134 @@
 //    return stamps;
 //}
 
-void BrushEngine::init() {
+
+
+
+
+
+
+
+
+
+
+
+
+void BrushEngine::interpolate() {
     
-    graphics->createRenderPass(stampRenderPass,
-                               VK_ATTACHMENT_LOAD_OP_LOAD);
-
-    graphics->createDescriptorSetLayout(stampDescriptorSetLayout);
-    graphics->createDescriptorPool(stampDescriptorPool);
-
-    auto stampVertShaderCode = Graphics::readFile(resolveBundlePath("brush_vert.spv"));
-    auto stampFragShaderCode = Graphics::readFile(resolveBundlePath("brush_frag.spv"));
-
-    VkShaderModule stampVertShaderModule = graphics->createShaderModule(stampVertShaderCode);
-    VkShaderModule stampFragShaderModule = graphics->createShaderModule(stampFragShaderCode);
-
-    VkPipelineShaderStageCreateInfo stampVertShaderStageInfo{};
-    stampVertShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-    stampVertShaderStageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
-    stampVertShaderStageInfo.module = stampVertShaderModule;
-    stampVertShaderStageInfo.pName = "main";
-
-    VkPipelineShaderStageCreateInfo stampFragShaderStageInfo{};
-    stampFragShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-    stampFragShaderStageInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-    stampFragShaderStageInfo.module = stampFragShaderModule;
-    stampFragShaderStageInfo.pName = "main";
-
-    VkPipelineShaderStageCreateInfo stampShaderStages[] = { stampVertShaderStageInfo, stampFragShaderStageInfo };
-
-    VkPushConstantRange pushConstantRange{};
-    pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-    pushConstantRange.offset = 0;
-    pushConstantRange.size = sizeof(StampPushConstant); // pos(vec2) + size(vec2) => 4 floats
-
-    graphics->createPipeline(stampPipeline,
-                             stampDescriptorSetLayout,
-                             stampPipelineLayout,
-                             stampRenderPass,
-                             stampShaderStages,
-                             pushConstantRange);
-
-    graphics->destroyShaderModule(stampVertShaderModule);
-    graphics->destroyShaderModule(stampFragShaderModule);
+    // inputs
     
-    // temp: default texture stamp
-
-    graphics->loadTexture(resolveBundlePath("brush.png"),
-                          VK_IMAGE_USAGE_TRANSFER_SRC_BIT
-                          | VK_IMAGE_USAGE_TRANSFER_DST_BIT
-                          | VK_IMAGE_USAGE_SAMPLED_BIT,
-                          1);
-
-    graphics->createDescriptorSets(graphics->textureImageViews[1], // temp
-                                   stampDescriptorSets,
-                                   stampDescriptorSetLayout,
-                                   stampDescriptorPool);
-
-    graphics->createFramebuffer(stampFrameBuffer,
-                                stampRenderPass,
-                                graphics->textureImageViews[0], // temp
-                                (int) 1024, // canvas width
-                                (int) 1024); // canvas height
-
+    std::vector<BrushPoint> rawBrushPoints;
+    
+    float spacing = 0.5f;
+    
+    
+    
+    
+    
 }
 
 
-//void BrushEngine::stamp(VkCommandBuffer& commandBuffer, std::vector<BrushPoint> stamps) {
-//    
-//    graphics->recordBeginRenderPass(commandBuffer,
-//                                    stampRenderPass,
-//                                    stampFrameBuffer,
-//                                    canvasWidth,
-//                                    canvasHeight,
-//                                    stampPipeline);
-//    
-//    graphics->recordSetViewport(commandBuffer,
-//                                0.0f,
-//                                0.0f,
-//                                canvasWidth,
-//                                canvasHeight);
-//
-//    graphics->recordBindDescriptorSet(commandBuffer,
-//                                      stampPipelineLayout,
-//                                      stampDescriptorSets);
-//
-//    graphics->recordSetScissor(commandBuffer,
-//                               0.0f,
-//                               0.0f,
-//                               canvasWidth,
-//                               canvasHeight);
-//    
-//    for (BrushPoint stamp : stamps) {
-//        
-//        StampPushConstant pc { { stamp.position.x, stamp.position.y }, { 0.25f, 0.25f } };
-//
-//        graphics->recordPushConstant(commandBuffer,
-//                                     stampPipelineLayout,
-//                                     sizeof(pc),
-//                                     &pc);
-//
-//        graphics->recordDraw(commandBuffer);
-//        
-//    }
-//
-//    graphics->recordEndRenderPass(commandBuffer);
-//
-//}
+
+
+
+
+
+glm::vec2 screenToWorldSpace(glm::vec3 position,
+                             glm::vec2 windowSize,
+                             glm::vec2 point) {
+    
+    float aspect = windowSize.x / windowSize.y; // window aspect
+    static float tanHalfFovy = 0.4142f; // hard coded for 45 deg
+    
+    float ndcX = (point.x / windowSize.x) * 2.0f - 1.0f;
+    float ndcY = 1.0f - (point.y / windowSize.y) * 2.0f;
+
+    return {
+        ndcX * position.z * tanHalfFovy * aspect + position.x,
+        ndcY * position.z * tanHalfFovy + position.y
+    };
+
+}
+
+void BrushEngine::interpolate() {
+    
+    // todo
+    
+    // after this, worry about caching ?
+    // then tool system refactor
+    // then undo function, any canvas size, tiling
+    // zoom / pan tool 
+    
+}
+
+void BrushEngine::recordCommandBuffer(VkCommandBuffer& commandBuffer,
+                                      std::vector<BrushPoint> brushPoints) {
+    
+    int canvasWidth = 1024; // todo: (re)move
+    int canvasHeight = 1024;
+
+    graphics->recordBeginRenderPass(commandBuffer,
+                                    stampRenderPass,
+                                    stampFrameBuffer,
+                                    canvasWidth,
+                                    canvasHeight,
+                                    stampPipeline);
+
+    graphics->recordSetViewport(commandBuffer,
+                                0.0f,
+                                0.0f,
+                                canvasWidth,
+                                canvasHeight);
+
+    graphics->recordBindDescriptorSet(commandBuffer,
+                                      stampPipelineLayout,
+                                      stampDescriptorSets);
+
+    graphics->recordSetScissor(commandBuffer,
+                               0.0f,
+                               0.0f,
+                               canvasWidth,
+                               canvasHeight);
+
+    for (BrushPoint brushPoint : brushPoints) {
+
+        StampPushConstant pc {
+            { brushPoint.position.x, brushPoint.position.y },
+            { 0.25f, 0.25f }
+        };
+
+        graphics->recordPushConstant(commandBuffer,
+                                     stampPipelineLayout,
+                                     sizeof(pc),
+                                     &pc);
+
+        graphics->recordDraw(commandBuffer);
+
+    }
+
+    graphics->recordEndRenderPass(commandBuffer);
+
+}
+
+void BrushEngine::stamp(VkCommandBuffer& commandBuffer,
+                        Camera camera,
+                        glm::vec2 windowSize,
+                        BrushStrokeData brushStrokeData) {
+    
+    // todo: interpolate points
+    
+    std::vector<BrushPoint> brushPoints; // temp: brush stamping without interpolation
+    for (int i = brushStrokeData.lastUpdatedIndex; i < brushStrokeData.brushPoints.size(); i++) {
+        BrushPoint rawPoint = brushStrokeData.brushPoints[i];
+        glm::vec2 worldPoint = screenToWorldSpace(camera.position,
+                                                  windowSize,
+                                                  rawPoint.position);
+        brushPoints.push_back(BrushPoint { worldPoint });
+    }
+    
+    recordCommandBuffer(commandBuffer, brushPoints);
+    
+}
 
 void BrushEngine::cleanup() {
     

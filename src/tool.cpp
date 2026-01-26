@@ -12,6 +12,14 @@
 
 // todo: get functionality back
 
+// todo: persistent subclass state system with transitions ...
+    // current state
+    // transitions in and out ...
+    // ensures all cases are handled well
+    // no more switch cases ...
+
+    // actionbuffer is still the central buffer though ...
+
 ToolSystem::ToolSystem() : selectedTool(Tool::BRUSH) {
     actionBuffer = new ActionBuffer<75>;
 }

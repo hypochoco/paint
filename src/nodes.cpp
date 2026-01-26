@@ -7,6 +7,10 @@
 
 #include "paint/nodes.h"
 
-void CameraNode::process(FrameGraph* frameGraph, RenderWorker* renderWorker) {
-    renderWorker->processCameraNode(frameGraph);
+void CameraNode::process(FrameGraph& frameGraph, RenderWorker& renderWorker) {
+    renderWorker.processCameraNode(frameGraph);
+}
+
+void BrushStrokeNode::process(FrameGraph& frameGraph, RenderWorker& renderWorker) {
+    renderWorker.processBrushStrokeNode(frameGraph, *this);
 }

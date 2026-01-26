@@ -11,9 +11,11 @@
 
 #include "paint/brush.h"
 #include "paint/graph.h"
+#include "paint/nodes.h"
 
 struct FrameGraph; // forward declaration
 class BrushEngine; // forward declaration
+struct BrushStrokeNode; // forward declaration
 
 class RenderWorker : public QObject {
     Q_OBJECT
@@ -22,7 +24,8 @@ public:
     RenderWorker(Graphics* graphics, BrushEngine* brushEngine)
     : graphics(graphics), brushEngine(brushEngine) {}
     
-    void processCameraNode(FrameGraph* frameGraph);
+    void processCameraNode(FrameGraph& frameGraph);
+    void processBrushStrokeNode(FrameGraph& frameGraph, BrushStrokeNode& brushStrokeNode);
     
 public slots:
     void onQueueFrame(FrameGraph frameGraph);

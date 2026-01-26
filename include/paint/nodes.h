@@ -11,14 +11,16 @@
 
 #include "paint/graph.h"
 #include "paint/worker.h"
+#include "paint/actions.h"
 
 struct FrameGraph; // forward declaration
 class RenderWorker; // forward declaration
+struct BrushStrokeData;
 
 struct Node {
     virtual ~Node() = default;
     std::vector<Node*> children;
-    virtual void process(FrameGraph* frameGraph, RenderWorker* renderWorker) {}
+    virtual void process(FrameGraph& frameGraph, RenderWorker& renderWorker) {}
 };
 
 template <typename F>
@@ -31,23 +33,11 @@ inline void dfs(Node* node, F&& op) {
 }
 
 struct CameraNode : public Node {
-    ~CameraNode() override {
-        qDebug() << "[camera node] destructor called";
-    }
-    void process(FrameGraph* frameGraph, RenderWorker* renderWorker) override;
+    void process(FrameGraph& frameGraph, RenderWorker& renderWorker) override;
 };
 
-//struct BrushNode : public Node {
-//    BrushStroke* brushStroke;
-//    BrushNode(BrushStroke* brushStroke) : brushStroke(brushStroke) {}
-//    void execute(RenderWorker* worker) override;
-//    void cleanup() override;
-//};
-
-//void BrushNode::execute(RenderWorker* worker) {
-//    worker->processBrush(brushStroke);
-//}
-
-//void BrushNode::cleanup() {
-//    delete brushStroke;
-//}
+struct BrushStrokeNode : public Node {
+    BrushStrokeData& brushStrokeData;
+    BrushStrokeNode(BrushStrokeData& brushStrokeData) : brushStrokeData(brushStrokeData) {}
+    void process(FrameGraph& frameGraph, RenderWorker& renderWorker) override;
+};

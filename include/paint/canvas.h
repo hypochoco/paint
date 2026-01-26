@@ -18,34 +18,6 @@
 #include <QMouseEvent>
 #include <QKeyEvent>
 
-class RenderWatchdog : public QObject {
-    Q_OBJECT
-    
-    // note: hack fix for low power render halting
-    
-    // todo: pause watchdog when idle
-    
-public:
-    RenderWatchdog(QWidget *container) : m_container(container) {
-        m_timer.setInterval(250);
-        connect(&m_timer, &QTimer::timeout,
-                this, &RenderWatchdog::nudge);
-        m_timer.start();
-    }
-
-private slots:
-    void nudge() {
-        if (!m_container) return;
-        const QSize s = m_container->size();
-        m_container->resize(s.width() + 1, s.height());
-        m_container->resize(s);
-    }
-
-private:
-    QWidget *m_container = nullptr;
-    QTimer m_timer;
-};
-
 class Canvas {
     // todo: struct that holds some data on size and other stuff
 };
@@ -86,7 +58,6 @@ signals:
     void leftButtonPressed(int x, int y);
     void leftButtonReleased(int x, int y);
     void mouseMoved(int x, int y);
-    
         
 private:
     bool leftMouseDown = false;

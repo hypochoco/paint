@@ -8,8 +8,13 @@
 #pragma once
 
 #include "paint/tool.h"
+#include "paint/actions.h"
+#include "paint/camera.h"
 
 #include <engine/graphics/graphics.h>
+
+struct BrushPoint; // foward declaration
+struct BrushStrokeData; // foward declaration
 
 struct StampPushConstant {
     float pos[2];
@@ -24,15 +29,11 @@ public:
     void init();
     void cleanup();
     
-//    void stamp(VkCommandBuffer& commandBuffer, std::vector<BrushPoint> stamps);
-//    
-//    static glm::vec2 screenToWorldSpace(float cx, float cy, float cz,
-//                                        uint32_t width, uint32_t height,
-//                                        float x, float y);
-//    static std::vector<BrushPoint> interpolate(BrushStroke* brushStroke,
-//                                               float cx, float cy, float cz,
-//                                               uint32_t width, uint32_t height);
-    
+    void stamp(VkCommandBuffer& commandBuffer,
+               Camera camera,
+               glm::vec2 windowSize,
+               BrushStrokeData brushStrokeData);
+        
 private:
     Graphics* graphics;
     
@@ -43,5 +44,9 @@ private:
     std::vector<VkDescriptorSet> stampDescriptorSets;
     VkPipeline stampPipeline;
     VkPipelineLayout stampPipelineLayout;
+    
+    void interpolate();
+    void recordCommandBuffer(VkCommandBuffer& commandBuffer,
+                             std::vector<BrushPoint> brushPoints);
         
 };

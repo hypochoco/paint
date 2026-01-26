@@ -1,15 +1,17 @@
 
 # Current development notes
 
-- [ ] Setup brush functionality
-    - [ ] Get stamping back
-    - [ ] Interpolation
-    - [ ] Action undo  
-    
----
-
 Painting application:
 
+- [ ] Setup brush functionality
+    - [x] Get stamping back
+    - [ ] Interpolation
+    - [ ] Undo action / image backups 
+    
+    - [ ] Round brush
+    - [ ] Brush opacity
+
+- [ ] Tiling
 - [ ] Layer visibility 
 - [ ] Canvas flipping
 

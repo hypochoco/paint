@@ -22,8 +22,7 @@ enum ActionState {
 };
 
 struct ActionData {
-    // todo
-    // todo: clone function ... 
+    virtual ActionData* clone() = 0;
 };
 
 struct Action {
@@ -31,14 +30,18 @@ struct Action {
     virtual ~Action() = default;
 
     ActionState state;
-        
-    virtual void record(int x, int y) = 0;
-    virtual void update() = 0;
-    virtual void setState(ActionState state) {
+    
+    void setState(ActionState state) {
         this->state = state;
     }
     
     virtual void addEvent(FrameGraphBuilder& builder) = 0;
+    
+    // todo: remove these two functions after tool state system refactor
+    
+    virtual void record(int x, int y) = 0;
+    virtual void update() = 0;
+    
 };
 
 struct BrushPoint {
@@ -47,6 +50,11 @@ struct BrushPoint {
 
 struct BrushStrokeData : public ActionData {
     std::vector<BrushPoint> brushPoints;
+    int lastUpdatedIndex = 0;
+    // todo: last updated index
+    BrushStrokeData* clone() override {
+        return new BrushStrokeData(*this);
+    }
 };
 
 struct BrushStroke : public Action {
@@ -57,9 +65,11 @@ struct BrushStroke : public Action {
         data.brushPoints.emplace_back(BrushPoint { glm::vec2(x,y) });
     }
     
-    void update() override {} // todo: some kind of indication of processed
+    void update() override { // note: called after each action query
+        data.lastUpdatedIndex = (int) data.brushPoints.size();
+    }
     
-    void addEvent(FrameGraphBuilder& builder) override {}
+    void addEvent(FrameGraphBuilder& builder) override;
     
 };
 
@@ -74,6 +84,9 @@ public:
     static constexpr size_t capacity = Capacity;
     
     void push(Action* action) noexcept {
+        if (buffer[head]) {
+            delete buffer[head];
+        }
         buffer[head] = (action);
         head = (head + 1) % Capacity;
         if (head == tail) {

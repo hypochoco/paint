@@ -15,11 +15,11 @@ void FrameGraph::build() {
 }
 
 void FrameGraph::cleanup() {
+    dfs(root, [](Node* node) { delete node; });
     for (Event* event : events) {
-        delete event; // note: action clone delete here
+        delete event; // note: action data clones delete here
     }
     events.clear();
-    dfs(root, [](Node* node) { delete node; });
 }
 
 FrameGraphBuilder& FrameGraphBuilder::addCameraEvent() {
@@ -28,7 +28,7 @@ FrameGraphBuilder& FrameGraphBuilder::addCameraEvent() {
     return *this;
 };
 
-FrameGraphBuilder& FrameGraphBuilder::addBrushStrokeEvent() {
-    // todo: add the brush stroke event
+FrameGraphBuilder& FrameGraphBuilder::addBrushStrokeEvent(BrushStrokeData* brushStrokeData) {
+    events.push_back(new BrushStrokeEvent { brushStrokeData });
     return *this;
 };

@@ -8,7 +8,7 @@
 #include "paint/canvas.h"
 
 void CanvasWindow::exposeEvent(QExposeEvent *event) {
-    qDebug() << "[canvas window] exposed event";
+    qDebug() << "[canvas window] exposed event " << isExposed();
     QWindow::exposeEvent(event);
     if (isExposed()) {
         requestUpdate();
@@ -18,10 +18,10 @@ void CanvasWindow::exposeEvent(QExposeEvent *event) {
 
 bool CanvasWindow::event(QEvent* event) {
     
-    if (event->type() == QEvent::UpdateRequest) {
-        event->accept();
-        return true;
-    }
+//    if (event->type() == QEvent::UpdateRequest) {
+//        event->accept();
+//        return true;
+//    }
 
     if (event->type() == QEvent::PlatformSurface) {
         auto *surfaceEvent = static_cast<QPlatformSurfaceEvent *>(event);

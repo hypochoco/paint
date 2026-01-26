@@ -23,7 +23,7 @@
 
 int main(int argc, char *argv[]) {
     QApplication app(argc, argv);
-    
+        
     // vulkan instance
     
     QVulkanInstance* inst = new QVulkanInstance;
@@ -60,12 +60,6 @@ int main(int argc, char *argv[]) {
     
     CanvasWindow* canvasWindow = new CanvasWindow(inst);
     QWidget* canvasWindowContainer = QWidget::createWindowContainer(canvasWindow);
-    
-#if defined(__APPLE__) && defined(__MACH__)
-    if (isLowPowerModeEnabled()) { // note: hack fix for low power render halting
-//        auto *watchdog = new RenderWatchdog(canvasWindowContainer);
-    }
-#endif
     
     // setup connections
     
