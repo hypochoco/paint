@@ -22,7 +22,7 @@ struct BrushStrokeData; // forward declaration
 
 struct FrameGraph {
     uint32_t currentFrame, imageIndex;
-    int windowWidth, windowHeight;
+    glm::vec2 windowSize;
     Camera camera;
     
     std::vector<Event*> events;
@@ -38,8 +38,8 @@ inline QDebug operator<<(QDebug dbg, const FrameGraph &fg) {
         << "FrameGraph{"
         << "\n\tcurrentFrame=" << fg.currentFrame
         << ", imageIndex=" << fg.imageIndex
-        << ", \n\twindowWidth=" << fg.windowWidth
-        << ", windowHeight=" << fg.windowHeight
+        << ", \n\twindowWidth=" << fg.windowSize.x
+        << ", windowHeight=" << fg.windowSize.y
         << ", \n\tcamera=" << fg.camera
         << ", \n\tevents size=" << fg.events.size()
         << "}";
@@ -49,7 +49,7 @@ inline QDebug operator<<(QDebug dbg, const FrameGraph &fg) {
 struct FrameGraphBuilder {
     
     uint32_t imageIndex, currentFrame;
-    int windowWidth, windowHeight;
+    glm::vec2 windowSize;
     Camera camera;
     std::vector<Event*> events;
     
@@ -63,13 +63,8 @@ struct FrameGraphBuilder {
         return *this;
     };
     
-    FrameGraphBuilder& withWindowWidth(int width) {
-        this->windowWidth = width;
-        return *this;
-    };
-
-    FrameGraphBuilder& withWindowHeight(int height) {
-        this->windowHeight = height;
+    FrameGraphBuilder& withWindowSize(int width, int height) {
+        this->windowSize = glm::vec2{ width, height };
         return *this;
     };
     
@@ -85,8 +80,7 @@ struct FrameGraphBuilder {
         return FrameGraph {
             currentFrame,
             imageIndex,
-            windowWidth,
-            windowHeight,
+            windowSize,
             camera,
             events
         };

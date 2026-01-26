@@ -3,9 +3,12 @@
 
 Painting application:
 
+- [ ] Tool system refactor
+- [ ] Render worker brush engine caching 
+
 - [ ] Setup brush functionality
     - [x] Get stamping back
-    - [ ] Interpolation
+    - [x] Interpolation
     - [ ] Undo action / image backups 
     
     - [ ] Round brush

@@ -139,8 +139,7 @@ void RenderSystem::startFrame() {
     builder.withImageIndex(graphics->imageIndex)
         .withCurrentFrame(graphics->currentFrame)
         .withCamera(camera)
-        .withWindowWidth(windowWidth)
-        .withWindowHeight(windowHeight);
+        .withWindowSize(windowWidth, windowHeight);
     
     if (dirtyFlags.dirty(DirtyFlag::CAMERA, graphics->currentFrame)) {
         builder.addCameraEvent();

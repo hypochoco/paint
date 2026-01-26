@@ -73,109 +73,6 @@ void BrushEngine::init() {
 
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-//std::vector<BrushPoint> BrushEngine::interpolate(BrushStroke* brushStroke,
-//                                                 float cx, float cy, float cz,
-//                                                 uint32_t width, uint32_t height) {
-//
-//    // todo: a lot of wasted computation ?
-//
-//    float spacing = 0.05f; // temp
-//    float carry = 0.0f;
-//
-//    std::vector<BrushPoint> stamps;
-//    if (brushStroke->rawBrushPoints.empty()) return stamps;
-//
-//    BrushPoint lastInput = brushStroke->rawBrushPoints[0];
-//    lastInput.position = screenToWorldSpace(
-//        cx, cy, cz, width, height,
-//        lastInput.position.x, lastInput.position.y
-//    );
-//
-//    if (brushStroke->submitedIndex == 0) {
-//        stamps.push_back(lastInput);
-//    }
-//
-//    for (size_t i = 1; i < brushStroke->rawBrushPoints.size(); ++i) {
-//
-//        BrushPoint current = brushStroke->rawBrushPoints[i];
-//        current.position = screenToWorldSpace(
-//            cx, cy, cz, width, height,
-//            current.position.x, current.position.y
-//        );
-//
-//        glm::vec2 segment = current.position - lastInput.position;
-//        float segLen = glm::length(segment);
-//
-//        if (segLen == 0.0f) {
-//            lastInput = current;
-//            continue;
-//        }
-//
-//        glm::vec2 dir = segment / segLen;
-//        float traveled = 0.0f;
-//
-//        while (traveled + spacing - carry <= segLen) {
-//            float step = spacing - carry;
-//            traveled += step;
-//            if (i > brushStroke->submitedIndex) {
-//                stamps.push_back(BrushPoint(lastInput.position + dir * traveled));
-//            }
-//            carry = 0.0f;
-//        }
-//
-//        carry += segLen - traveled;
-//        lastInput = current;
-//    }
-//
-//    return stamps;
-//}
-
-
-
-
-
-
-
-
-
-
-
-
-
-void BrushEngine::interpolate() {
-    
-    // inputs
-    
-    std::vector<BrushPoint> rawBrushPoints;
-    
-    float spacing = 0.5f;
-    
-    
-    
-    
-    
-}
-
-
-
-
-
-
-
 glm::vec2 screenToWorldSpace(glm::vec3 position,
                              glm::vec2 windowSize,
                              glm::vec2 point) {
@@ -193,14 +90,60 @@ glm::vec2 screenToWorldSpace(glm::vec3 position,
 
 }
 
-void BrushEngine::interpolate() {
+std::vector<BrushPoint> BrushEngine::interpolate(Camera& camera,
+                                                 glm::vec2& windowSize,
+                                                 BrushStrokeData& brushStrokeData) {
     
-    // todo
+    // todo: work caching, actions need ids
     
-    // after this, worry about caching ?
-    // then tool system refactor
-    // then undo function, any canvas size, tiling
-    // zoom / pan tool 
+    float spacing = 0.05f; // todo: move
+    
+    float carry = 0.0f;
+
+    std::vector<BrushPoint> stamps;
+    if (brushStrokeData.brushPoints.empty()) return stamps;
+
+    BrushPoint lastInput = brushStrokeData.brushPoints[0];
+    lastInput.position = screenToWorldSpace(camera.position,
+                                            windowSize,
+                                            lastInput.position);
+
+    if (brushStrokeData.nextIndex == 0) {
+        stamps.push_back(lastInput);
+    }
+
+    for (size_t i = 1; i < brushStrokeData.brushPoints.size(); ++i) {
+
+        BrushPoint current = brushStrokeData.brushPoints[i];
+        current.position = screenToWorldSpace(camera.position,
+                                              windowSize,
+                                              current.position);
+
+        glm::vec2 segment = current.position - lastInput.position;
+        float segLen = glm::length(segment);
+
+        if (segLen == 0.0f) {
+            lastInput = current;
+            continue;
+        }
+
+        glm::vec2 dir = segment / segLen;
+        float traveled = 0.0f;
+
+        while (traveled + spacing - carry <= segLen) {
+            float step = spacing - carry;
+            traveled += step;
+            if (i >= brushStrokeData.nextIndex) {
+                stamps.push_back(BrushPoint { lastInput.position + dir * traveled });
+            }
+            carry = 0.0f;
+        }
+
+        carry += segLen - traveled;
+        lastInput = current;
+    }
+
+    return stamps;
     
 }
 
@@ -254,22 +197,14 @@ void BrushEngine::recordCommandBuffer(VkCommandBuffer& commandBuffer,
 }
 
 void BrushEngine::stamp(VkCommandBuffer& commandBuffer,
-                        Camera camera,
-                        glm::vec2 windowSize,
-                        BrushStrokeData brushStrokeData) {
-    
-    // todo: interpolate points
-    
-    std::vector<BrushPoint> brushPoints; // temp: brush stamping without interpolation
-    for (int i = brushStrokeData.lastUpdatedIndex; i < brushStrokeData.brushPoints.size(); i++) {
-        BrushPoint rawPoint = brushStrokeData.brushPoints[i];
-        glm::vec2 worldPoint = screenToWorldSpace(camera.position,
-                                                  windowSize,
-                                                  rawPoint.position);
-        brushPoints.push_back(BrushPoint { worldPoint });
-    }
-    
-    recordCommandBuffer(commandBuffer, brushPoints);
+                        Camera& camera,
+                        glm::vec2& windowSize,
+                        BrushStrokeData& brushStrokeData) {
+
+    recordCommandBuffer(commandBuffer,
+                        interpolate(camera,
+                                    windowSize,
+                                    brushStrokeData));
     
 }
 

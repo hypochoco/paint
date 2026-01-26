@@ -50,7 +50,7 @@ struct BrushPoint {
 
 struct BrushStrokeData : public ActionData {
     std::vector<BrushPoint> brushPoints;
-    int lastUpdatedIndex = 0;
+    int nextIndex = 0;
     // todo: last updated index
     BrushStrokeData* clone() override {
         return new BrushStrokeData(*this);
@@ -66,7 +66,7 @@ struct BrushStroke : public Action {
     }
     
     void update() override { // note: called after each action query
-        data.lastUpdatedIndex = (int) data.brushPoints.size();
+        data.nextIndex = (int) data.brushPoints.size();
     }
     
     void addEvent(FrameGraphBuilder& builder) override;

@@ -30,9 +30,9 @@ public:
     void cleanup();
     
     void stamp(VkCommandBuffer& commandBuffer,
-               Camera camera,
-               glm::vec2 windowSize,
-               BrushStrokeData brushStrokeData);
+               Camera& camera,
+               glm::vec2& windowSize,
+               BrushStrokeData& brushStrokeData);
         
 private:
     Graphics* graphics;
@@ -45,7 +45,9 @@ private:
     VkPipeline stampPipeline;
     VkPipelineLayout stampPipelineLayout;
     
-    void interpolate();
+    std::vector<BrushPoint> interpolate(Camera& camera,
+                                        glm::vec2& windowSize,
+                                        BrushStrokeData& brushStrokeData);
     void recordCommandBuffer(VkCommandBuffer& commandBuffer,
                              std::vector<BrushPoint> brushPoints);
         

@@ -17,7 +17,7 @@ void RenderWorker::processCameraNode(FrameGraph& frameGraph) {
                                  0.0f), // look at
                        glm::vec3(0.0f, 1.0f, 0.0f)); // up
     proj = glm::perspective(glm::radians(45.0f), // fovy
-                            frameGraph.windowWidth / (float) frameGraph.windowHeight,
+                            frameGraph.windowSize.x / (float) frameGraph.windowSize.y,
                             0.1f, // near
                             10.0f); // far
     proj[1][1] *= -1; // strange projection fix
@@ -34,7 +34,7 @@ void RenderWorker::processBrushStrokeNode(FrameGraph& frameGraph, BrushStrokeNod
     
     brushEngine->stamp(graphics->commandBuffers[frameGraph.currentFrame],
                        frameGraph.camera,
-                       glm::vec2 { frameGraph.windowWidth, frameGraph.windowHeight },
+                       frameGraph.windowSize,
                        brushStrokeNode.brushStrokeData);
 }
 
