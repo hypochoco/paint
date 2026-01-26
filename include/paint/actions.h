@@ -78,7 +78,11 @@ class ActionBuffer {
     // todo: once this hits capacity clear, notify and clear?
 public:
     ActionBuffer() : head(0), tail(0) {}
-    ~ActionBuffer() {}
+    ~ActionBuffer() {
+        for (Action* action : buffer) {
+            if (action) delete action;
+        }
+    }
     
     size_t head, tail;
     static constexpr size_t capacity = Capacity;

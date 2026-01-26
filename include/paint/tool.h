@@ -16,8 +16,31 @@ struct Action; // forward declaration
 template<size_t Capacity>
 class ActionBuffer; // forward declaration
 
-enum Tool {
-    BRUSH
+struct Tool {
+    
+    virtual ~Tool() = default;
+            
+    virtual void onSelect() = 0;
+    virtual void onDeselect() = 0;
+
+    virtual bool leftButtonPressed(int x, int y) = 0;
+    virtual bool leftButtonReleased(int x, int y) = 0;
+    virtual bool mouseMoved(int x, int y) = 0;
+};
+
+struct BrushTool : public Tool {
+    
+    BrushTool(ActionBuffer<75>* actionBuffer) : actionBuffer(actionBuffer) {}
+    
+    ActionBuffer<75>* actionBuffer;
+    
+    void onSelect() override {};
+    void onDeselect() override {};
+
+    bool leftButtonPressed(int x, int y) override;
+    bool leftButtonReleased(int x, int y) override;
+    bool mouseMoved(int x, int y) override;
+    
 };
 
 class ToolSystem : public QObject {
@@ -38,6 +61,8 @@ signals:
     void actionsAvailable();
     
 private:
-    Tool selectedTool;
     ActionBuffer<75>* actionBuffer;
+    Tool* tool; // todo: list / mapping of tools
+    
+    void selectTool() {}; // todo: deselect current, select new
 };
