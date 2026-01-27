@@ -16,6 +16,8 @@ struct Action; // forward declaration
 template<size_t Capacity>
 class ActionBuffer; // forward declaration
 
+static constexpr size_t ACTION_BUFFER_SIZE = 75;
+
 struct Tool {
     
     virtual ~Tool() = default;
@@ -30,9 +32,9 @@ struct Tool {
 
 struct BrushTool : public Tool {
     
-    BrushTool(ActionBuffer<75>* actionBuffer) : actionBuffer(actionBuffer) {}
+    BrushTool(ActionBuffer<ACTION_BUFFER_SIZE>* actionBuffer) : actionBuffer(actionBuffer) {}
     
-    ActionBuffer<75>* actionBuffer;
+    ActionBuffer<ACTION_BUFFER_SIZE>* actionBuffer;
     
     void onSelect() override {};
     void onDeselect() override {};
@@ -61,7 +63,7 @@ signals:
     void actionsAvailable();
     
 private:
-    ActionBuffer<75>* actionBuffer;
+    ActionBuffer<ACTION_BUFFER_SIZE>* actionBuffer;
     Tool* tool; // todo: list / mapping of tools
     
     void selectTool() {}; // todo: deselect current, select new

@@ -12,6 +12,7 @@
 #include <glm/glm.hpp>
 
 #include "paint/graph.h"
+#include "paint/brush_point.h"
 
 struct FrameGraphBuilder; // forward declaration
 
@@ -22,7 +23,16 @@ enum ActionState {
 };
 
 struct ActionData {
+    uint32_t id;
     virtual ActionData* clone() = 0;
+    
+protected:
+    ActionData() : id(nextId++) {}
+    ActionData(const ActionData& other) : id(other.id) {}
+    
+private:
+    inline static uint32_t nextId = 0;
+    
 };
 
 struct Action {
@@ -36,22 +46,16 @@ struct Action {
     }
     
     virtual void addEvent(FrameGraphBuilder& builder) = 0;
-    
-    // todo: remove these two functions after tool state system refactor
-    
     virtual void record(int x, int y) = 0;
     virtual void update() = 0;
     
 };
 
-struct BrushPoint {
-    glm::vec2 position;
-};
-
 struct BrushStrokeData : public ActionData {
-    std::vector<BrushPoint> brushPoints;
+    
     int nextIndex = 0;
-    // todo: last updated index
+    std::vector<BrushPoint> brushPoints;
+    
     BrushStrokeData* clone() override {
         return new BrushStrokeData(*this);
     }

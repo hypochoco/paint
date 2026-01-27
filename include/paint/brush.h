@@ -10,6 +10,7 @@
 #include "paint/tool.h"
 #include "paint/actions.h"
 #include "paint/camera.h"
+#include "paint/cache.h"
 
 #include <engine/graphics/graphics.h>
 
@@ -32,7 +33,8 @@ public:
     void stamp(VkCommandBuffer& commandBuffer,
                Camera& camera,
                glm::vec2& windowSize,
-               BrushStrokeData& brushStrokeData);
+               BrushStrokeData& brushStrokeData,
+               BrushStrokeDataCache& brushStrokeDataCache);
         
 private:
     Graphics* graphics;
@@ -47,7 +49,8 @@ private:
     
     std::vector<BrushPoint> interpolate(Camera& camera,
                                         glm::vec2& windowSize,
-                                        BrushStrokeData& brushStrokeData);
+                                        BrushStrokeData& brushStrokeData,
+                                        BrushStrokeDataCache& brushStrokeDataCache);
     void recordCommandBuffer(VkCommandBuffer& commandBuffer,
                              std::vector<BrushPoint> brushPoints);
         

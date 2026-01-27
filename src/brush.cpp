@@ -92,27 +92,37 @@ glm::vec2 screenToWorldSpace(glm::vec3 position,
 
 std::vector<BrushPoint> BrushEngine::interpolate(Camera& camera,
                                                  glm::vec2& windowSize,
-                                                 BrushStrokeData& brushStrokeData) {
-    
-    // todo: work caching, actions need ids
-    
-    float spacing = 0.05f; // todo: move
-    
-    float carry = 0.0f;
+                                                 BrushStrokeData& brushStrokeData,
+                                                 BrushStrokeDataCache& brushStrokeDataCache) {
+
+    constexpr float spacing = 0.05f; // todo: move
 
     std::vector<BrushPoint> stamps;
     if (brushStrokeData.brushPoints.empty()) return stamps;
 
-    BrushPoint lastInput = brushStrokeData.brushPoints[0];
-    lastInput.position = screenToWorldSpace(camera.position,
-                                            windowSize,
-                                            lastInput.position);
-
-    if (brushStrokeData.nextIndex == 0) {
+    float carry;
+    BrushPoint lastInput;
+    
+    if (!brushStrokeDataCache.initialized) {
+        carry = 0.0f;
+        lastInput = brushStrokeData.brushPoints[0];
+        lastInput.position = screenToWorldSpace(camera.position,
+                                                windowSize,
+                                                lastInput.position);
+        brushStrokeDataCache.carry = carry;
+        brushStrokeDataCache.currentIndex = 1;
+        brushStrokeDataCache.lastInput = lastInput;
+        brushStrokeDataCache.initialized = true;
+    } else {
+        carry = brushStrokeDataCache.carry;
+        lastInput = brushStrokeDataCache.lastInput;
+    }
+    
+    if (brushStrokeData.nextIndex == 0) { // note: base case
         stamps.push_back(lastInput);
     }
 
-    for (size_t i = 1; i < brushStrokeData.brushPoints.size(); ++i) {
+    for (size_t i = brushStrokeDataCache.currentIndex; i < brushStrokeData.brushPoints.size(); ++i) {
 
         BrushPoint current = brushStrokeData.brushPoints[i];
         current.position = screenToWorldSpace(camera.position,
@@ -133,18 +143,20 @@ std::vector<BrushPoint> BrushEngine::interpolate(Camera& camera,
         while (traveled + spacing - carry <= segLen) {
             float step = spacing - carry;
             traveled += step;
-            if (i >= brushStrokeData.nextIndex) {
-                stamps.push_back(BrushPoint { lastInput.position + dir * traveled });
-            }
+            stamps.push_back(
+                BrushPoint{ lastInput.position + dir * traveled });
             carry = 0.0f;
         }
 
         carry += segLen - traveled;
         lastInput = current;
+
+        brushStrokeDataCache.currentIndex = i + 1;
+        brushStrokeDataCache.lastInput = lastInput;
     }
 
+    brushStrokeDataCache.carry = carry;
     return stamps;
-    
 }
 
 void BrushEngine::recordCommandBuffer(VkCommandBuffer& commandBuffer,
@@ -199,12 +211,14 @@ void BrushEngine::recordCommandBuffer(VkCommandBuffer& commandBuffer,
 void BrushEngine::stamp(VkCommandBuffer& commandBuffer,
                         Camera& camera,
                         glm::vec2& windowSize,
-                        BrushStrokeData& brushStrokeData) {
+                        BrushStrokeData& brushStrokeData,
+                        BrushStrokeDataCache& brushStrokeDataCache) {
 
     recordCommandBuffer(commandBuffer,
                         interpolate(camera,
                                     windowSize,
-                                    brushStrokeData));
+                                    brushStrokeData,
+                                    brushStrokeDataCache));
     
 }
 

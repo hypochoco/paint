@@ -7,6 +7,8 @@
 
 #include "paint/worker.h"
 
+#include <chrono>
+
 void RenderWorker::processCameraNode(FrameGraph& frameGraph) {
     qDebug() << "[render worker] processing camera node";
     
@@ -28,14 +30,25 @@ void RenderWorker::processCameraNode(FrameGraph& frameGraph) {
 
 void RenderWorker::processBrushStrokeNode(FrameGraph& frameGraph, BrushStrokeNode& brushStrokeNode) {
     qDebug() << "[render worker] processing brush stroke node"
+    << "\n\tid: " << brushStrokeNode.brushStrokeData.id
     << "\n\traw brush stroke size: " << brushStrokeNode.brushStrokeData.brushPoints.size();
     
-    // todo: consider caching brushstroke information in the worker
+    // note: without caching 0-3 ms, with caching 0 ms
     
+    auto start = std::chrono::high_resolution_clock::now();
+        
     brushEngine->stamp(graphics->commandBuffers[frameGraph.currentFrame],
                        frameGraph.camera,
                        frameGraph.windowSize,
-                       brushStrokeNode.brushStrokeData);
+                       brushStrokeNode.brushStrokeData,
+                       actionDataCache->getBrushStrokeDataCache(brushStrokeNode.brushStrokeData.id));
+    
+    auto stop = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(stop - start);
+    
+    qDebug() << "[render worker] processing brush stroke node took: "
+    << duration.count() << " milliseconds";
+    
 }
 
 void RenderWorker::onQueueFrame(FrameGraph frameGraph) {

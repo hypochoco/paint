@@ -3,16 +3,19 @@
 
 Painting application:
 
-- [ ] Tool system refactor
+- [ ] Rename all files and reorganize into folders
+
+- [x] Tool system refactor
 - [ ] Render worker brush engine caching 
 
 - [ ] Setup brush functionality
     - [x] Get stamping back
     - [x] Interpolation
+    - [ ] More interpolation methods 
     - [ ] Undo action / image backups 
-    
     - [ ] Round brush
     - [ ] Brush opacity
+    - [ ] Brush settings UI
 
 - [ ] Tiling
 - [ ] Layer visibility 

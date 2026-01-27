@@ -12,6 +12,7 @@
 #include "paint/brush.h"
 #include "paint/graph.h"
 #include "paint/nodes.h"
+#include "paint/cache.h"
 
 struct FrameGraph; // forward declaration
 class BrushEngine; // forward declaration
@@ -22,7 +23,13 @@ class RenderWorker : public QObject {
     
 public:
     RenderWorker(Graphics* graphics, BrushEngine* brushEngine)
-    : graphics(graphics), brushEngine(brushEngine) {}
+    : graphics(graphics), brushEngine(brushEngine) {
+        actionDataCache = new ActionDataCache;
+    }
+    
+    ~RenderWorker() {
+        delete actionDataCache;
+    }
     
     void processCameraNode(FrameGraph& frameGraph);
     void processBrushStrokeNode(FrameGraph& frameGraph, BrushStrokeNode& brushStrokeNode);
@@ -36,5 +43,6 @@ signals:
 private:
     Graphics* graphics;
     BrushEngine* brushEngine;
+    ActionDataCache* actionDataCache;
     
 };
