@@ -3,16 +3,15 @@
 
 Painting application:
 
-- [ ] Rename all files and reorganize into folders
-
-- [x] Tool system refactor
-- [ ] Render worker brush engine caching 
+- [ ] Cleanup camera hardcoded logic
+    - [ ] Screen to world function inside the camera ?
 
 - [ ] Setup brush functionality
     - [x] Get stamping back
     - [x] Interpolation
-    - [ ] More interpolation methods 
     - [ ] Undo action / image backups 
+    
+    - [ ] More interpolation methods 
     - [ ] Round brush
     - [ ] Brush opacity
     - [ ] Brush settings UI

@@ -14,24 +14,50 @@ add_subdirectory(external/engine)
 
 # app
 if (!APPLE)
-    add_executable(main main.cpp src/application.cpp src/input_system.cpp)
+    add_executable(main main.cpp)
 else()
     # For macOS app bundle (optional) — create a .app so MoltenVK frameworks can be embedded
     add_executable(main MACOSX_BUNDLE main.cpp)
     set_target_properties(main PROPERTIES
         MACOSX_BUNDLE TRUE
         MACOSX_BUNDLE_BUNDLE_NAME "PaintBundle"
-        RESOURCE "${CMAKE_SOURCE_DIR}/resources"
     )
 endif()
 
 # glob headers and src
-file(GLOB_RECURSE MY_SOURCES src/*.cpp include/*.h)
+if (!APPLE)
+    file(GLOB_RECURSE MY_SOURCES src/*.cpp include/*.h)
+else()
+    file(GLOB_RECURSE MY_SOURCES src/*.cpp src/*.mm include/*.h)
+endif()
 target_sources(main PRIVATE ${MY_SOURCES})
+source_group(
+    TREE ${CMAKE_CURRENT_SOURCE_DIR}
+    FILES
+        main.cpp
+        ${MY_SOURCES}
+)
 target_include_directories(main
     PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
+
+# resources
+if (APPLE)
+    file(GLOB_RECURSE APP_RESOURCES
+        "${CMAKE_SOURCE_DIR}/resources/*"
+    )
+    target_sources(main PRIVATE ${APP_RESOURCES})
+    set_source_files_properties(${APP_RESOURCES}
+        PROPERTIES MACOSX_PACKAGE_LOCATION Resources
+    )
+    source_group(
+        TREE "${CMAKE_SOURCE_DIR}/resources"
+        PREFIX "Resources"
+        FILES ${APP_RESOURCES}
+    )
+endif()
+
 
 # engine
 target_link_libraries(main PRIVATE engine::engine)

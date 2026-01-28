@@ -14,12 +14,10 @@
 #include <QApplication>
 #include <QVulkanInstance>
 
-#include "paint/application.h" // main window
-#include "paint/render.h" // render system
-#include "paint/tool.h" // tool system
-#include "paint/canvas.h" // vulkan canvas
-
-#include "paint/utils.h" // low power mode detection
+#include "paint/application.h"
+#include "paint/render_system/render_system.h"
+#include "paint/tool_system/tool_system.h"
+#include "paint/canvas/canvas_window.h"
 
 int main(int argc, char *argv[]) {
     QApplication app(argc, argv);

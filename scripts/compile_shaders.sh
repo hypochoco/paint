@@ -1,20 +1,20 @@
 #!/bin/bash
+set -e
 
-rm resources/vert.spv
-rm resources/frag.spv
+GLSLC="/Users/danielcho/VulkanSDK/1.4.313.0/macOS/bin/glslc"
+SRC_DIR="src/shaders"
+OUT_DIR="resources/shaders"
 
-/Users/danielcho/VulkanSDK/1.4.313.0/macOS/bin/glslc src/shaders/shader.vert -o resources/vert.spv
-/Users/danielcho/VulkanSDK/1.4.313.0/macOS/bin/glslc src/shaders/shader.frag -o resources/frag.spv
+mkdir -p "$OUT_DIR"
 
-rm resources/brush_vert.spv
-rm resources/brush_frag.spv
+# Find all .vert and .frag shaders recursively
+find "$SRC_DIR" -type f \( -name "*.vert" -o -name "*.frag" \) | while read -r shader; do
+    filename="$(basename "$shader")"
+    name="${filename%.*}"        # shader
+    ext="${filename##*.}"        # vert or frag
 
-/Users/danielcho/VulkanSDK/1.4.313.0/macOS/bin/glslc src/shaders/brush_shader.vert -o resources/brush_vert.spv
-/Users/danielcho/VulkanSDK/1.4.313.0/macOS/bin/glslc src/shaders/brush_shader.frag -o resources/brush_frag.spv
+    output="$OUT_DIR/${name}_${ext}.spv"
 
-rm resources/layer_vert.spv
-rm resources/layer_frag.spv
-
-/Users/danielcho/VulkanSDK/1.4.313.0/macOS/bin/glslc src/shaders/layer_shader.vert -o resources/layer_vert.spv
-/Users/danielcho/VulkanSDK/1.4.313.0/macOS/bin/glslc src/shaders/layer_shader.frag -o resources/layer_frag.spv
-
+    echo "Compiling $shader → $output"
+    "$GLSLC" "$shader" -o "$output"
+done
