@@ -13,17 +13,7 @@ void RenderWorker::processCameraNode(FrameGraph& frameGraph) {
     qDebug() << "[render worker] processing camera node";
     
     glm::mat4 view, proj;
-    view = glm::lookAt(frameGraph.camera.position, // camera pos
-                       glm::vec3(frameGraph.camera.position.x,
-                                 frameGraph.camera.position.y,
-                                 0.0f), // look at
-                       glm::vec3(0.0f, 1.0f, 0.0f)); // up
-    proj = glm::perspective(glm::radians(45.0f), // fovy
-                            frameGraph.windowSize.x / (float) frameGraph.windowSize.y,
-                            0.1f, // near
-                            10.0f); // far
-    proj[1][1] *= -1; // strange projection fix
-
+    frameGraph.camera.calculateMatrices(view, proj, frameGraph.windowSize);
     graphics->updateGlobalUBO(frameGraph.currentFrame, view, proj);
 
 }

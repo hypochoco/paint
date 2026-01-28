@@ -75,23 +75,6 @@ void BrushEngine::init() {
 
 }
 
-glm::vec2 screenToWorldSpace(glm::vec3 position,
-                             glm::vec2 windowSize,
-                             glm::vec2 point) {
-    
-    float aspect = windowSize.x / windowSize.y; // window aspect
-    static float tanHalfFovy = 0.4142f; // hard coded for 45 deg
-    
-    float ndcX = (point.x / windowSize.x) * 2.0f - 1.0f;
-    float ndcY = 1.0f - (point.y / windowSize.y) * 2.0f;
-
-    return {
-        ndcX * position.z * tanHalfFovy * aspect + position.x,
-        ndcY * position.z * tanHalfFovy + position.y
-    };
-
-}
-
 std::vector<BrushPoint> BrushEngine::interpolate(Camera& camera,
                                                  glm::vec2& windowSize,
                                                  BrushStrokeData& brushStrokeData,
@@ -108,9 +91,7 @@ std::vector<BrushPoint> BrushEngine::interpolate(Camera& camera,
     if (!brushStrokeDataCache.initialized) {
         carry = 0.0f;
         lastInput = brushStrokeData.brushPoints[0];
-        lastInput.position = screenToWorldSpace(camera.position,
-                                                windowSize,
-                                                lastInput.position);
+        lastInput.position = camera.screenToWorldSpace(windowSize, lastInput.position);
         brushStrokeDataCache.carry = carry;
         brushStrokeDataCache.currentIndex = 1;
         brushStrokeDataCache.lastInput = lastInput;
@@ -127,9 +108,7 @@ std::vector<BrushPoint> BrushEngine::interpolate(Camera& camera,
     for (size_t i = brushStrokeDataCache.currentIndex; i < brushStrokeData.brushPoints.size(); ++i) {
 
         BrushPoint current = brushStrokeData.brushPoints[i];
-        current.position = screenToWorldSpace(camera.position,
-                                              windowSize,
-                                              current.position);
+        current.position = camera.screenToWorldSpace(windowSize, current.position);
 
         glm::vec2 segment = current.position - lastInput.position;
         float segLen = glm::length(segment);
