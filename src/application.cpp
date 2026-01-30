@@ -17,6 +17,8 @@
 #include <QVBoxLayout>
 #include <QWidget>
 
+#include "paint/panels/layer_panel.h"
+
 MainWindow::MainWindow() {
     createMenus();
     createToolbar();
@@ -58,7 +60,12 @@ void MainWindow::createDockPanels() {
     colorDock->setWidget(colorWidget);
     addDockWidget(Qt::RightDockWidgetArea, colorDock);
     
+    // layer panel
+    
+    LayersPanel* layersPanel = new LayersPanel(this);
+    
     QDockWidget* layersDock = new QDockWidget("Layers", this);
+    layersDock->setWidget(layersPanel);
     layersDock->setMinimumWidth(360);
     addDockWidget(Qt::RightDockWidgetArea, layersDock);
     

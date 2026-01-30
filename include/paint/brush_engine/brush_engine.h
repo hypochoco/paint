@@ -21,7 +21,6 @@ public:
     
     void init();
     void cleanup();
-    
     void stamp(VkCommandBuffer& commandBuffer,
                Camera& camera,
                glm::vec2& windowSize,
