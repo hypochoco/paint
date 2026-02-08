@@ -20,23 +20,33 @@ public:
     BrushEngine(Graphics* graphics) : graphics(graphics) {}
     
     void init();
-    void cleanup();
+    void setCanvas(int canvasWidth, int canvasHeight);
+    void createFrameBuffer(VkImageView& imageView, VkFramebuffer& frameBuffer);
+    void setTarget(VkFramebuffer& frameBuffer);
     void stamp(VkCommandBuffer& commandBuffer,
                Camera& camera,
                glm::vec2& windowSize,
                BrushStrokeData& brushStrokeData,
                BrushStrokeDataCache& brushStrokeDataCache);
+    void cleanup();
         
 private:
     Graphics* graphics;
+    int canvasWidth, canvasHeight;
     
     VkRenderPass stampRenderPass;
     VkFramebuffer stampFrameBuffer;
     VkDescriptorSetLayout stampDescriptorSetLayout;
     VkDescriptorPool stampDescriptorPool;
-    std::vector<VkDescriptorSet> stampDescriptorSets;
+    VkDescriptorSet stampDescriptorSet;
     VkPipeline stampPipeline;
     VkPipelineLayout stampPipelineLayout;
+    
+    std::vector<VkImage> images;
+    std::vector<VkImageView> imageViews;
+    std::vector<VkDeviceMemory> imageMemories;
+    
+    void loadBrushes();
     
     std::vector<BrushPoint> interpolate(Camera& camera,
                                         glm::vec2& windowSize,

@@ -13,15 +13,20 @@
 #include <vector>
 
 #include "paint/render_system/camera.h"
+#include "paint/canvas/canvas_data.h"
 #include "paint/render_system/frame_graph/event.h"
 
 struct Event; // forward declaration
 struct Node; // forward declaration
 
 struct FrameGraph {
+    
     uint32_t currentFrame, imageIndex;
     glm::vec2 windowSize;
+    
     Camera camera;
+    CanvasData canvasData;
+    int selectedLayer = -1;
     
     std::vector<Event*> events;
     Node* root;
@@ -39,6 +44,7 @@ inline QDebug operator<<(QDebug dbg, const FrameGraph &fg) {
         << ", \n\twindowWidth=" << fg.windowSize.x
         << ", windowHeight=" << fg.windowSize.y
         << ", \n\tcamera=" << fg.camera
+        << ", \n\tselectedLayer=" << fg.selectedLayer
         << ", \n\tevents size=" << fg.events.size()
         << "}";
     return dbg;

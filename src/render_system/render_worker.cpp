@@ -33,6 +33,8 @@ void RenderWorker::processBrushStrokeNode(FrameGraph& frameGraph, BrushStrokeNod
                        brushStrokeNode.brushStrokeData,
                        actionDataCache->getBrushStrokeDataCache(brushStrokeNode.brushStrokeData.id));
     
+    layerEngine->stamp(graphics->commandBuffers[frameGraph.currentFrame]); // todo: move
+    
     auto stop = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(stop - start);
     
@@ -41,10 +43,36 @@ void RenderWorker::processBrushStrokeNode(FrameGraph& frameGraph, BrushStrokeNod
     
 }
 
+void RenderWorker::processLayerNode(FrameGraph& frameGraph) {
+    qDebug() << "[render worker] processing layer node";
+    
+    layerEngine->stamp(graphics->commandBuffers[frameGraph.currentFrame]);
+}
+
 void RenderWorker::onQueueFrame(FrameGraph frameGraph) {
     qDebug() << "[render worker] frame graph: \n" << frameGraph;
     
-    frameGraph.build();
+    frameGraph.build(); // todo
+    
+    // ---
+    
+    // todo: move to frame graph building
+    
+    Layer& layer = frameGraph.canvasData.layers[frameGraph.selectedLayer];
+    if (frameBufferMap.find(layer.id) == frameBufferMap.end()) {
+        VkFramebuffer frameBuffer;
+        brushEngine->createFrameBuffer(layer.imageView, frameBuffer);
+        frameBufferMap[layer.id] = frameBuffer;
+    }
+    if (descriptorSetMap.find(layer.id) == descriptorSetMap.end()) {
+        VkDescriptorSet descriptorSet;
+        layerEngine->createDescriptorSet(layer.imageView, descriptorSet);
+        descriptorSetMap[layer.id] = descriptorSet;
+    }
+    brushEngine->setTarget(frameBufferMap[layer.id]);
+    layerEngine->setSource(descriptorSetMap[layer.id]);
+    
+    // ---
     
     graphics->beginCommandBuffer(frameGraph.currentFrame);
     
@@ -55,5 +83,13 @@ void RenderWorker::onQueueFrame(FrameGraph frameGraph) {
     
     frameGraph.cleanup();
     
-    emit frameReady(frameGraph);
+    emit frameReady(frameGraph); // todo: error when adding the canvas ?
+}
+
+void RenderWorker::cleanup() {
+    
+    for (auto& it : frameBufferMap) {
+        graphics->destroyFrameBuffer(it.second);
+    }
+    
 }

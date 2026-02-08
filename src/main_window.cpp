@@ -1,5 +1,5 @@
 //
-//  application.cpp
+//  main_window.cpp
 //  engine
 //
 //  Created by Daniel Cho on 9/30/25.
@@ -7,7 +7,7 @@
 
 // creates the main window
 
-#include "paint/application.h"
+#include "paint/main_window.h"
 
 #include <stdexcept>
 #include <iostream>
@@ -16,8 +16,6 @@
 #include <QPushButton>
 #include <QVBoxLayout>
 #include <QWidget>
-
-#include "paint/panels/layer_panel.h"
 
 MainWindow::MainWindow() {
     createMenus();
@@ -62,7 +60,7 @@ void MainWindow::createDockPanels() {
     
     // layer panel
     
-    LayersPanel* layersPanel = new LayersPanel(this);
+    layersPanel = new LayersPanel(this);
     
     QDockWidget* layersDock = new QDockWidget("Layers", this);
     layersDock->setWidget(layersPanel);

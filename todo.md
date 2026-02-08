@@ -3,21 +3,41 @@
 
 Painting application:
 
+- [x] Get layer targets working
+
+- [ ] Layer renaming saved to canvas data structure
+
+- [ ] Handle multiple canvas windows
+- [ ] Draw blank if there is no canvas   
+- [ ] Background gray color
+    
 - [ ] Canvas 
+    - [ ] Sync canvas and layer panel 
 
+    - [ ] Arbitrary canvas size
+    
     - [ ] Layers 
-        - [ ] requires brush engine to switch layer targets
-        - [ ] requires layer drawing commands -> layer engine 
-        - [x] Frontend interaction 
-
+        - [x] layer engine source switching
+        - [x] brush engine target switching 
+        - [x] starting layer
+        - [x] layers after starting layer are clear
+        - [x] delete and reordering layers
+        - [x] cleanup canvas creation and initialization
+        
+        - [ ] fix layers are clear after layer switching
+    
+    - [ ] Frontend interaction
+        - [x] create frontend
+        - [ ] connect frontend functionality 
+        - [ ] bottom to top 
+        - [ ] layer groups
 
     - [ ] Tiling
-        - [ ] in brush engine, calculate what tiles from what layers need updates
+        - [ ] calculate brush and layer tiles to update
+        
     - [ ] Undo
         - [ ] image backups 
-        
-- [ ] Fix the existing draw job system 
-    
+            
 ---
 
 - [ ] Brush tool

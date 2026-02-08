@@ -11,6 +11,34 @@
 
 #include "paint/utils.h"
 
+void BrushEngine::loadBrushes() {
+    
+    // temp: default texture stamp
+    
+    VkImage image;
+    VkDeviceMemory imageMemory;
+    VkImageView imageView;
+
+    graphics->loadTexture(resolveBundlePath("brush.png"),
+                          image,
+                          imageMemory,
+                          imageView,
+                          VK_IMAGE_USAGE_TRANSFER_SRC_BIT
+                          | VK_IMAGE_USAGE_TRANSFER_DST_BIT
+                          | VK_IMAGE_USAGE_SAMPLED_BIT,
+                          1);
+    
+    graphics->createDescriptorSet(imageView,
+                                  stampDescriptorSet,
+                                  stampDescriptorSetLayout,
+                                  stampDescriptorPool);
+    
+    images.push_back(image);
+    imageMemories.push_back(imageMemory);
+    imageViews.push_back(imageView);
+
+}
+
 void BrushEngine::init() {
     
     graphics->createRenderPass(stampRenderPass,
@@ -54,25 +82,31 @@ void BrushEngine::init() {
     graphics->destroyShaderModule(stampVertShaderModule);
     graphics->destroyShaderModule(stampFragShaderModule);
     
-    // temp: default texture stamp
+    loadBrushes();
+    
+}
 
-    graphics->loadTexture(resolveBundlePath("brush.png"),
-                          VK_IMAGE_USAGE_TRANSFER_SRC_BIT
-                          | VK_IMAGE_USAGE_TRANSFER_DST_BIT
-                          | VK_IMAGE_USAGE_SAMPLED_BIT,
-                          1);
+void BrushEngine::setCanvas(int canvasWidth, int canvasHeight) {
+    
+    this->canvasWidth = canvasWidth;
+    this->canvasHeight = canvasHeight;
+    
+}
 
-    graphics->createDescriptorSets(graphics->textureImageViews[1], // temp
-                                   stampDescriptorSets,
-                                   stampDescriptorSetLayout,
-                                   stampDescriptorPool);
-
-    graphics->createFramebuffer(stampFrameBuffer,
+void BrushEngine::createFrameBuffer(VkImageView& imageView, VkFramebuffer& frameBuffer) {
+    
+    graphics->createFramebuffer(frameBuffer,
                                 stampRenderPass,
-                                graphics->textureImageViews[0], // temp
-                                (int) 1024, // canvas width
-                                (int) 1024); // canvas height
+                                imageView,
+                                canvasWidth,
+                                canvasHeight);
+        
+}
 
+void BrushEngine::setTarget(VkFramebuffer& frameBuffer) {
+    
+    stampFrameBuffer = frameBuffer;
+        
 }
 
 std::vector<BrushPoint> BrushEngine::interpolate(Camera& camera,
@@ -161,7 +195,7 @@ void BrushEngine::recordCommandBuffer(VkCommandBuffer& commandBuffer,
 
     graphics->recordBindDescriptorSet(commandBuffer,
                                       stampPipelineLayout,
-                                      stampDescriptorSets);
+                                      stampDescriptorSet);
 
     graphics->recordSetScissor(commandBuffer,
                                0.0f,
@@ -205,10 +239,19 @@ void BrushEngine::stamp(VkCommandBuffer& commandBuffer,
 
 void BrushEngine::cleanup() {
     
+    for (auto& iv : imageViews) {
+        graphics->destroyVkImageView(iv);
+    }
+    for (auto& i : images) {
+        graphics->destroyVkImage(i);
+    }
+    for (auto& im : imageMemories) {
+        graphics->destroyVkDeviceMemory(im);
+    }
+    
     graphics->destroyPipeline(stampPipeline);
     graphics->destroyPipelineLayout(stampPipelineLayout);
     graphics->destroyRenderPass(stampRenderPass);
-    graphics->destroyFrameBuffer(stampFrameBuffer);
     graphics->destroyDescriptorPool(stampDescriptorPool);
     graphics->destroyDescriptorSetLayout(stampDescriptorSetLayout);
     

@@ -31,6 +31,9 @@ public:
                 // qDebug() << "[dirty flags] set actions flag";
                 actions = true;
                 break;
+            case DirtyFlag::LAYER:
+                layer = true;
+                break;
             default:
                 qDebug() << "[dirty flags] warning: flag not implemented";
                 break;
@@ -41,12 +44,14 @@ public:
         resized = false;
         camera[frame] = false;
         actions = false;
+        layer = false;
     }
     
     bool dirty() {
         return resized
         || std::any_of(camera.begin(), camera.end(), [](bool b){ return b; })
-        || actions;
+        || actions
+        || layer;
     }
     
     bool dirty(DirtyFlag flag) {
@@ -56,6 +61,9 @@ public:
             case DirtyFlag::ACTIONS:
                 qDebug() << "[dirty flags] actions flag: " << actions;
                 return actions;
+            case DirtyFlag::LAYER:
+                qDebug() << "[dirty flags] layer flag: " << layer;
+                return layer;
             default:
                 qDebug() << "[dirty flags] warning: flag not implemented";
                 return false;
@@ -77,5 +85,6 @@ private:
     bool resized;
     std::vector<bool> camera;
     bool actions;
+    bool layer;
 
 };

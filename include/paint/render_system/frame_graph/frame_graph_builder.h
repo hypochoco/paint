@@ -9,6 +9,7 @@
 
 #include "paint/render_system/frame_graph/frame_graph.h"
 
+#include "paint/canvas/canvas_data.h"
 #include "paint/tool_system/actions/brush_stroke_data.h"
 
 struct FrameGraphBuilder {
@@ -16,6 +17,9 @@ struct FrameGraphBuilder {
     uint32_t imageIndex, currentFrame;
     glm::vec2 windowSize;
     Camera camera;
+    CanvasData canvasData;
+    int selectedLayer;
+    
     std::vector<Event*> events;
     
     FrameGraphBuilder& withImageIndex(uint32_t imageIndex) {
@@ -38,8 +42,19 @@ struct FrameGraphBuilder {
         return *this;
     };
     
+    FrameGraphBuilder& withCanvasData(CanvasData canvasData) {
+        this->canvasData = canvasData;
+        return *this;
+    };
+    
+    FrameGraphBuilder& withSelectedLayer(int selectedLayer) {
+        this->selectedLayer = selectedLayer;
+        return *this;
+    };
+    
     FrameGraphBuilder& addCameraEvent();
     FrameGraphBuilder& addBrushStrokeEvent(BrushStrokeData* brushStrokeData);
+    FrameGraphBuilder& addLayerEvent();
 
     FrameGraph build() {
         return FrameGraph {
@@ -47,6 +62,8 @@ struct FrameGraphBuilder {
             imageIndex,
             windowSize,
             camera,
+            canvasData,
+            selectedLayer,
             events
         };
     }

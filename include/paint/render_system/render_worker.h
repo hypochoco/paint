@@ -9,9 +9,12 @@
 
 #include <QObject>
 
+#include <unordered_map>
+
 #include <engine/graphics/graphics.h>
 
 #include "paint/brush_engine/brush_engine.h"
+#include "paint/layer_engine/layer_engine.h"
 #include "paint/render_system/cache/action_data_cache.h"
 #include "paint/render_system/frame_graph/frame_graph.h"
 #include "paint/render_system/frame_graph/brush_stroke_node.h"
@@ -23,8 +26,8 @@ class RenderWorker : public QObject {
     Q_OBJECT
     
 public:
-    RenderWorker(Graphics* graphics, BrushEngine* brushEngine)
-    : graphics(graphics), brushEngine(brushEngine) {
+    RenderWorker(Graphics* graphics, LayerEngine* layerEngine, BrushEngine* brushEngine)
+    : graphics(graphics), layerEngine(layerEngine), brushEngine(brushEngine) {
         actionDataCache = new ActionDataCache;
     }
     
@@ -34,6 +37,9 @@ public:
     
     void processCameraNode(FrameGraph& frameGraph);
     void processBrushStrokeNode(FrameGraph& frameGraph, BrushStrokeNode& brushStrokeNode);
+    void processLayerNode(FrameGraph& frameGraph);
+    
+    void cleanup();
     
 public slots:
     void onQueueFrame(FrameGraph frameGraph);
@@ -43,7 +49,11 @@ signals:
     
 private:
     Graphics* graphics;
+    LayerEngine* layerEngine;
     BrushEngine* brushEngine;
     ActionDataCache* actionDataCache;
+    
+    std::unordered_map<int, VkDescriptorSet> descriptorSetMap;
+    std::unordered_map<int, VkFramebuffer> frameBufferMap;
     
 };

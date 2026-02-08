@@ -7,10 +7,6 @@
 
 #include "paint/render_system/frame_graph/frame_graph.h"
 
-#include "paint/render_system/frame_graph/camera_event.h"
-#include "paint/render_system/frame_graph/brush_stroke_event.h"
-#include "paint/render_system/frame_graph/frame_graph_builder.h"
-
 void FrameGraph::build() {
     root = new Node;
     for (Event* event : events) {
@@ -25,14 +21,3 @@ void FrameGraph::cleanup() {
     }
     events.clear();
 }
-
-FrameGraphBuilder& FrameGraphBuilder::addCameraEvent() {
-    qDebug() << "[frame graph builder] adding camera event";
-    events.push_back(new CameraEvent);
-    return *this;
-};
-
-FrameGraphBuilder& FrameGraphBuilder::addBrushStrokeEvent(BrushStrokeData* brushStrokeData) {
-    events.push_back(new BrushStrokeEvent { brushStrokeData });
-    return *this;
-};

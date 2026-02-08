@@ -25,34 +25,61 @@ public:
         connectSignals();
     }
     
-signals:
-    void layerAdded(int index);
-    void layerRemoved(int index);
-    void layerSelected(int index);
-
+    void sync() {
+        m_layerList->clear();
+        emit signalSync([this](std::string name) {
+            addLayerItem(QString::fromStdString(name));
+        });
+    }
+    
+public slots:
+    void onSelectedLayer(std::function<void(int)> reply) {
+        reply(m_layerList->currentRow());
+    }
+    
 private slots:
+    
+    // todo: layer grouping
+    
     void addLayer() {
-        int count = m_layerList->count();
-        addLayerItem(QString("Layer %1").arg(count + 1));
-
-         emit layerAdded(count);
+        int row = m_layerList->currentRow() + 1;
+        emit signalAddLayer(row, [this, &row](std::string name) {
+            insertLayerItem(row, QString::fromStdString(name));
+        });
     }
 
     void removeSelectedLayer() {
         int row = m_layerList->currentRow();
-        if (row < 0)
-            return;
-
+        if (row < 0) return;
         delete m_layerList->takeItem(row);
-         emit layerRemoved(row);
+        m_layerList->setCurrentRow(row - 1);
+        emit signalRemoveLayer(row);
     }
     
     void onSelectionChanged() {
         int row = m_layerList->currentRow();
-        if (row >= 0)
-             emit layerSelected(row);
+        qDebug() << "[layer panel] selection changed " << row;
     }
     
+    void onRowsMoved(const QModelIndex&,
+                     int start,
+                     int end,
+                     const QModelIndex&,
+                     int destinationRow) {
+        qDebug() << "[layer panel] rows moved";
+        if (start != end) throw std::runtime_error("[layer panel] multi move not implemented");
+        if (destinationRow > start)
+            destinationRow -= 1;
+        emit signalRowsMoved(start, destinationRow);
+    }
+    
+signals:
+    void dirty();
+    void signalSync(std::function<void(std::string)> reply);
+    void signalAddLayer(int index, std::function<void(std::string)> reply);
+    void signalRemoveLayer(int index);
+    void signalRowsMoved(int from, int to);
+        
 private:
     QListWidget* m_layerList;
     QToolButton* m_addButton;
@@ -62,6 +89,16 @@ private:
         m_layerList = new QListWidget(this);
         m_layerList->setSelectionMode(QAbstractItemView::SingleSelection);
         m_layerList->setUniformItemSizes(true);
+        
+        m_layerList->setDragEnabled(true);
+        m_layerList->setAcceptDrops(true);
+        m_layerList->setDropIndicatorShown(true);
+        m_layerList->setDragDropMode(QAbstractItemView::InternalMove);
+        
+        // todo: bottom up ui
+        
+        connect(m_layerList->model(), &QAbstractItemModel::rowsMoved,
+                this, &LayersPanel::onRowsMoved);
         
         m_addButton = new QToolButton(this);
         m_addButton->setText("+");
@@ -80,6 +117,17 @@ private:
 
         setLayout(mainLayout);
 
+    }
+    
+    void connectSignals() { // internal connections
+        connect(m_addButton, &QToolButton::clicked,
+                this, &LayersPanel::addLayer);
+
+        connect(m_removeButton, &QToolButton::clicked,
+                this, &LayersPanel::removeSelectedLayer);
+
+        connect(m_layerList, &QListWidget::currentRowChanged,
+                this, &LayersPanel::onSelectionChanged);
     }
     
     static QWidget* createLayerWidget(const QString& name) {
@@ -101,22 +149,20 @@ private:
     
     void addLayerItem(const QString& name) {
         auto* item = new QListWidgetItem;
-        item->setSizeHint(QSize(0, 24)); // fixed height like Photoshop
-
+        item->setSizeHint(QSize(0, 24));
+        
         m_layerList->addItem(item);
-        m_layerList->setItemWidget(item, createLayerWidget(name));
+        m_layerList->setItemWidget(item, createLayerWidget(name)); // automatically parented
         m_layerList->setCurrentItem(item);
     }
     
-    void connectSignals() {
-        connect(m_addButton, &QToolButton::clicked,
-                this, &LayersPanel::addLayer);
-
-        connect(m_removeButton, &QToolButton::clicked,
-                this, &LayersPanel::removeSelectedLayer);
-
-        connect(m_layerList, &QListWidget::currentRowChanged,
-                this, &LayersPanel::onSelectionChanged);
+    void insertLayerItem(int index, const QString& name) {
+        auto* item = new QListWidgetItem;
+        item->setSizeHint(QSize(0, 24));
+        
+        m_layerList->insertItem(index, item);
+        m_layerList->setItemWidget(item, createLayerWidget(name)); // automatically parented
+        m_layerList->setCurrentItem(item);
     }
-    
+
 };

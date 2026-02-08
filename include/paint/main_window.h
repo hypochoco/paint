@@ -1,5 +1,5 @@
 //
-//  application.h
+//  main_window.h
 //  engine
 //
 //  Created by Daniel Cho on 9/30/25.
@@ -23,11 +23,15 @@
 //#include <QColorDialog>      // Color picker dialog
 //#include <QMessageBox>       // Alert/confirmation dialogs
 
+#include "paint/panels/layer_panel.h"
+
 class MainWindow : public QMainWindow {
     Q_OBJECT
     
 public:
     MainWindow();
+    
+    LayersPanel* layersPanel;
 
 private:
     void createMenus();

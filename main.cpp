@@ -14,10 +14,14 @@
 #include <QApplication>
 #include <QVulkanInstance>
 
-#include "paint/application.h"
+#include <engine/graphics/graphics.h>
+
+#include "paint/orchestrator.h"
+#include "paint/main_window.h"
 #include "paint/render_system/render_system.h"
 #include "paint/tool_system/tool_system.h"
 #include "paint/canvas/canvas_window.h"
+#include "paint/canvas/canvas.h"
 
 int main(int argc, char *argv[]) {
     QApplication app(argc, argv);
@@ -44,38 +48,49 @@ int main(int argc, char *argv[]) {
         return 1;
     }
     
+    // graphics
+    
+    Graphics* graphics = new Graphics;
+    graphics->setInstance(inst->vkInstance());
+    
     // systems
     
-    RenderSystem* renderSystem = new RenderSystem(inst);
+    RenderSystem* renderSystem = new RenderSystem(graphics);
     ToolSystem* toolSystem = new ToolSystem;
     
-    // main window
-    
-    MainWindow* mainWindow = new MainWindow();
-    mainWindow->setWindowTitle("Paint Application");
-    
     // canvas
+    
+    Canvas* canvas = new Canvas(graphics);
+    canvas->create(1024, 1024); // init canvas size
+    
+    // windows
     
     CanvasWindow* canvasWindow = new CanvasWindow(inst);
     QWidget* canvasWindowContainer = QWidget::createWindowContainer(canvasWindow);
     
-    // setup connections
+    MainWindow* mainWindow = new MainWindow();
+    mainWindow->setWindowTitle("Paint Application");
     
-    QObject::connect(canvasWindow, &CanvasWindow::surfaceCreated,
-                     renderSystem, &RenderSystem::onSurfaceCreated);
+    // orchestrator
+
+    Orchestrator* orchestrator = new Orchestrator(graphics);
+    orchestrator->induct(canvas);
+    orchestrator->induct(canvasWindow);
+    orchestrator->induct(renderSystem);
+    orchestrator->induct(mainWindow);
+    
+    // setup connections
+        
+    // todo: move into orchestrator
         
     QObject::connect(canvasWindow, &CanvasWindow::resized,
                      renderSystem, &RenderSystem::onResized);
     
     QObject::connect(canvasWindow, &CanvasWindow::exposed,
                      renderSystem, &RenderSystem::onExposed);
-        
-    QObject::connect(canvasWindow, &CanvasWindow::surfaceAboutToBeDestroyed,
-                     renderSystem, &RenderSystem::onSurfaceAbobutToBeDestroyed);
-        
+
     QObject::connect(renderSystem, &RenderSystem::requestUpdate,
                      canvasWindow, &CanvasWindow::onRequestUpdate);
-    
     
     QObject::connect(canvasWindow, &CanvasWindow::leftButtonPressed,
                      toolSystem, &ToolSystem::leftButtonPressed);
@@ -92,14 +107,14 @@ int main(int argc, char *argv[]) {
     
     QObject::connect(renderSystem, &RenderSystem::queryActions,
                      toolSystem, &ToolSystem::onQueryActions);
-        
+    
     // start application
     
     mainWindow->setCentralWidget(canvasWindowContainer);
     mainWindow->resize(1280, 720);
     mainWindow->show();
         
-    renderSystem->start();
+    orchestrator->start();
     
     return app.exec();
 }

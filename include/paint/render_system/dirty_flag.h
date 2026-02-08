@@ -8,5 +8,6 @@
 enum DirtyFlag {
     RESIZED,
     CAMERA,
-    ACTIONS
+    ACTIONS,
+    LAYER
 };

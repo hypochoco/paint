@@ -9,17 +9,16 @@
 
 #include "paint/utils.h"
 
-RenderSystem::RenderSystem(QVulkanInstance* inst) : inst(inst) {
-    
-    graphics = new Graphics;
-    graphics->setInstance(inst->vkInstance());
+RenderSystem::RenderSystem(Graphics* graphics) : graphics(graphics) {
     
     dirtyFlags.init(graphics->MAX_FRAMES_IN_FLIGHT);
     
+    layerEngine = new LayerEngine(graphics);
     brushEngine = new BrushEngine(graphics);
     
     renderThread = new QThread;
     renderWorker = new RenderWorker(graphics,
+                                    layerEngine,
                                     brushEngine);
     
     connect(this, &RenderSystem::queueFrame,
@@ -30,40 +29,20 @@ RenderSystem::RenderSystem(QVulkanInstance* inst) : inst(inst) {
             this, &RenderSystem::onFrameReady,
             Qt::QueuedConnection);
     
-    renderWorker->moveToThread(renderThread);
-    renderThread->start();
 }
 
 RenderSystem::~RenderSystem() {
+    
     delete renderWorker;
     delete renderThread;
     delete brushEngine;
-    delete graphics;
-}
-
-void RenderSystem::initCanvas() {
+    delete layerEngine;
     
-    float aspect = canvasWidth / (float) canvasHeight;
-
-    graphics->createTexture(canvasWidth,
-                            canvasHeight,
-                            VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT
-                            | VK_IMAGE_USAGE_TRANSFER_SRC_BIT
-                            | VK_IMAGE_USAGE_TRANSFER_DST_BIT
-                            | VK_IMAGE_USAGE_SAMPLED_BIT,
-                            1);
-
-    graphics->addDrawJob(0, 0, 1,
-                         std::vector<glm::mat4> { glm::scale(glm::mat4 { 1.0f },
-                                                             glm::vec3 { aspect, 1.0f, 1.0f }) });
-    
-    for (int i = 0; i< graphics->MAX_FRAMES_IN_FLIGHT; i++) {
-        graphics->copyInstanceToBuffer(i); // todo: change graphics api
-    }
-
 }
 
 void RenderSystem::init() {
+    
+    if (initialized) return;
     
     qDebug() << "[render system] init";
 
@@ -91,29 +70,73 @@ void RenderSystem::init() {
     graphics->createSwapChainFramebuffers();
     graphics->createSwapChainDescriptorPool();
     
-    initCanvas();
-    graphics->createSwapChainDescriptorSets();
     camera.position.z = 3.f; // note: default camera position
+    
+    layerEngine->init();
     brushEngine->init();
 
     initialized = true;
     
+    emit ready();
+    
+}
+
+void RenderSystem::initCanvas() {
+    
+    if (canvasInitialized) return;
+    if (!canvasData) return;
+    
+    qDebug() << "[render system] canvas init";
+    
+    float aspect = canvasData->width / (float) canvasData->height;
+
+    graphics->createTexture(canvasData->width, // swapchain texture
+                            canvasData->height,
+                            VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT
+                            | VK_IMAGE_USAGE_TRANSFER_SRC_BIT
+                            | VK_IMAGE_USAGE_TRANSFER_DST_BIT
+                            | VK_IMAGE_USAGE_SAMPLED_BIT,
+                            1,
+                            0);
+
+    graphics->addDrawJob(0, 0, 1,
+                         std::vector<glm::mat4> { glm::scale(glm::mat4 { 1.0f },
+                                                             glm::vec3 { aspect, 1.0f, 1.0f }) });
+    
+    for (int i = 0; i< graphics->MAX_FRAMES_IN_FLIGHT; i++) {
+        graphics->copyInstanceToBuffer(i); // todo: change graphics api
+    }
+    
+    graphics->createSwapChainDescriptorSets();
+        
+    layerEngine->setCanvas(canvasData->width, canvasData->height);
+    brushEngine->setCanvas(canvasData->width, canvasData->height);
+    
+    layerEngine->setTarget(graphics->textureImageViews[0]);
+                    
+    dirtyFlags.set(DirtyFlag::LAYER);
+
+    canvasInitialized = true;
+
 }
 
 void RenderSystem::update() {
-    
-    // ensure init and conditions
-    
+        
     if (!surfaceCreated) return;
     if (!exposed) return;
-    if (!initialized) init();
+    if (!initialized) {
+        init();
+        if (!initialized) return;
+    }
+    if (!canvasInitialized) {
+        initCanvas();
+        if (!canvasInitialized) return;
+    }
     if (graphics->getSwapChainExtent().width == 0
         || graphics->getSwapChainExtent().height == 0) {
         return;
     }
     if (!dirtyFlags.dirty()) return;
-    
-    // start frame if all conditions pass
     
     startFrame();
     
@@ -135,11 +158,16 @@ void RenderSystem::startFrame() {
     << graphics->imageIndex << "\n\tcurrent frame: "
     << graphics->currentFrame;
     
-    FrameGraphBuilder builder;
+    FrameGraphBuilder builder; // data copies
     builder.withImageIndex(graphics->imageIndex)
         .withCurrentFrame(graphics->currentFrame)
         .withCamera(camera)
+        .withCanvasData(*canvasData)
         .withWindowSize(windowWidth, windowHeight);
+    
+    emit querySelectedLayer([&builder](int index) {
+        builder.withSelectedLayer(index);
+    });
     
     if (dirtyFlags.dirty(DirtyFlag::CAMERA, graphics->currentFrame)) {
         builder.addCameraEvent();
@@ -149,6 +177,10 @@ void RenderSystem::startFrame() {
         emit queryActions([&builder](Action* action) {
             action->addEvent(builder);
         });
+    }
+    
+    if (dirtyFlags.dirty(DirtyFlag::LAYER)) {
+        builder.addLayerEvent();
     }
     
     dirtyFlags.clear(graphics->currentFrame);
@@ -181,8 +213,9 @@ void RenderSystem::cleanup() {
     renderThread->quit();
     renderThread->wait();
         
-    graphics->deviceWaitIdle();
     brushEngine->cleanup();
-    graphics->cleanupVulkan();
+    layerEngine->cleanup();
+    
+    renderWorker->cleanup();
     
 }
