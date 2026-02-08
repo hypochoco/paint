@@ -13,9 +13,6 @@ layout(location = 0) in vec2 outUV;
 layout(location = 0) out vec4 outColor;
 
 void main() {
-    
-    // todo: more interesting brush functions, currently just uses brush texture values
-    
     vec4 c = texture(brushTex, outUV);
     outColor = c;
 }

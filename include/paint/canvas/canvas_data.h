@@ -10,7 +10,11 @@
 #include "paint/canvas/layer.h"
 
 struct CanvasData {
+    static constexpr int TILE_WIDTH = 512;
+    static constexpr int TILE_HEIGHT = 512;
+    
     int width, height;
+    float aspect;
     std::vector<Layer> layers;
 };
 

@@ -13,6 +13,7 @@
 #include "paint/tool_system/actions/brush_stroke_data.h"
 #include "paint/render_system/cache/brush_stroke_data_cache.h"
 #include "paint/tool_system/actions/brush_point.h"
+#include "paint/canvas/canvas_data.h"
 
 class BrushEngine {
     
@@ -20,7 +21,7 @@ public:
     BrushEngine(Graphics* graphics) : graphics(graphics) {}
     
     void init();
-    void setCanvas(int canvasWidth, int canvasHeight);
+    void setCanvasData(CanvasData canvasData);
     void createFrameBuffer(VkImageView& imageView, VkFramebuffer& frameBuffer);
     void setTarget(VkFramebuffer& frameBuffer);
     void stamp(VkCommandBuffer& commandBuffer,
@@ -32,7 +33,8 @@ public:
         
 private:
     Graphics* graphics;
-    int canvasWidth, canvasHeight;
+    
+    CanvasData canvasData;
     
     VkRenderPass stampRenderPass;
     VkFramebuffer stampFrameBuffer;

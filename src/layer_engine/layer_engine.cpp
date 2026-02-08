@@ -65,12 +65,6 @@ void LayerEngine::createDescriptorSet(VkImageView& imageView, VkDescriptorSet& d
 
 }
 
-void LayerEngine::setSource(VkDescriptorSet& descriptorSet) {
-        
-    layerDescriptorSet = descriptorSet;
-    
-}
-
 void LayerEngine::setTarget(VkImageView& imageView) {
             
     graphics->createFramebuffer(layerFrameBuffer,
@@ -81,7 +75,8 @@ void LayerEngine::setTarget(VkImageView& imageView) {
     
 }
 
-void LayerEngine::stamp(VkCommandBuffer& commandBuffer) {
+void LayerEngine::stamp(VkCommandBuffer& commandBuffer,
+                        std::vector<VkDescriptorSet>& descriptorSets) {
         
     graphics->recordBeginRenderPass(commandBuffer,
                                     layerRenderPass,
@@ -95,24 +90,28 @@ void LayerEngine::stamp(VkCommandBuffer& commandBuffer) {
                                 0.0f,
                                 canvasWidth,
                                 canvasHeight);
-
-    graphics->recordBindDescriptorSet(commandBuffer,
-                                      layerPipelineLayout,
-                                      layerDescriptorSet);
-
+    
     graphics->recordSetScissor(commandBuffer,
                                0.f,
                                0.f,
                                canvasWidth,
                                canvasHeight);
-
-    graphics->recordClearAttachment(commandBuffer,
+    
+    graphics->recordClearAttachment(commandBuffer, // clear canvas
                                     0.f,
                                     0.f,
                                     canvasWidth,
                                     canvasHeight);
+    
+    for (VkDescriptorSet& descriptorSet : descriptorSets) {
+        
+        graphics->recordBindDescriptorSet(commandBuffer,
+                                          layerPipelineLayout,
+                                          descriptorSet);
 
-    graphics->recordDraw(commandBuffer);
+        graphics->recordDraw(commandBuffer);
+        
+    }
 
     graphics->recordEndRenderPass(commandBuffer);
 

@@ -3,40 +3,53 @@
 
 Painting application:
 
+- [ ] Move selected layer into the brush stroke action
+
+- [x] Rendering from top down on affected layers
+- [x] Layer deletion
 - [x] Get layer targets working
 
-- [ ] Layer renaming saved to canvas data structure
-
 - [ ] Handle multiple canvas windows
-- [ ] Draw blank if there is no canvas   
 - [ ] Background gray color
-    
-- [ ] Canvas 
-    - [ ] Sync canvas and layer panel 
 
-    - [ ] Arbitrary canvas size
-    
-    - [ ] Layers 
-        - [x] layer engine source switching
-        - [x] brush engine target switching 
-        - [x] starting layer
-        - [x] layers after starting layer are clear
-        - [x] delete and reordering layers
-        - [x] cleanup canvas creation and initialization
+- [ ] Tiling
+    - [x] arbitrary sized canvas
+    - [x] fix mouse + brush size positions
+    - [ ] general tiling system
+        - [ ] tile location calculation
         
-        - [ ] fix layers are clear after layer switching
+- [ ] Better way of handling canvas size ? dedicated quad ?
     
-    - [ ] Frontend interaction
-        - [x] create frontend
-        - [ ] connect frontend functionality 
-        - [ ] bottom to top 
-        - [ ] layer groups
+- [ ] Brush panel
 
-    - [ ] Tiling
-        - [ ] calculate brush and layer tiles to update
-        
-    - [ ] Undo
-        - [ ] image backups 
+- [ ] Layers 
+    - [x] Sync canvas and layer panel 
+    - [x] layer engine source switching
+    - [x] brush engine target switching 
+    - [x] starting layer
+    - [x] layers after starting layer are clear
+    - [x] delete and reordering layers
+    - [x] cleanup canvas creation and initialization
+    
+    - [x] fix layers are clear after layer switching
+    
+    - [ ] Layer renaming saved to canvas data structure
+    
+    - [ ] Crash on deleting the background layer 
+        - [ ] Draw blank if there is no canvas   
+    
+    - [x] White around brush edges ? 
+    - [ ] Its now a black border, but what value should it actually be then ?
+        - [ ] Bug in merging between layers, should be seemless but isnt ?
+
+- [ ] Frontend interaction
+    - [x] create frontend
+    - [x] connect frontend functionality 
+    - [ ] bottom to top 
+    - [ ] layer groups
+    
+- [ ] Undo
+    - [ ] image backups 
             
 ---
 
@@ -46,7 +59,7 @@ Painting application:
     - [ ] Undo action / image backups 
         - [ ] Switch between canvas images (per layer)
         - [ ] Copy image to another images (per layer)
-        - [ ] Some kind of data structure for this ?
+        - [x] Some kind of data structure for this ?
         - [ ] General canvas work, layers, tiling
     
     - [ ] More interpolation methods 

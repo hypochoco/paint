@@ -108,10 +108,8 @@ void RenderSystem::initCanvas() {
     }
     
     graphics->createSwapChainDescriptorSets();
-        
-    layerEngine->setCanvas(canvasData->width, canvasData->height);
-    brushEngine->setCanvas(canvasData->width, canvasData->height);
     
+    layerEngine->setCanvas(canvasData->width, canvasData->height); // todo: move
     layerEngine->setTarget(graphics->textureImageViews[0]);
                     
     dirtyFlags.set(DirtyFlag::LAYER);

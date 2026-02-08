@@ -34,6 +34,7 @@ public:
     void create(int width, int height) {
         data->width = width;
         data->height = height;
+        data->aspect = width / (float) height;
         initializeNew = true;
     }
     

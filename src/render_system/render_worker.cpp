@@ -33,8 +33,8 @@ void RenderWorker::processBrushStrokeNode(FrameGraph& frameGraph, BrushStrokeNod
                        brushStrokeNode.brushStrokeData,
                        actionDataCache->getBrushStrokeDataCache(brushStrokeNode.brushStrokeData.id));
     
-    layerEngine->stamp(graphics->commandBuffers[frameGraph.currentFrame]); // todo: move
-    
+    processLayerNode(frameGraph); // todo: temp
+        
     auto stop = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(stop - start);
     
@@ -46,7 +46,22 @@ void RenderWorker::processBrushStrokeNode(FrameGraph& frameGraph, BrushStrokeNod
 void RenderWorker::processLayerNode(FrameGraph& frameGraph) {
     qDebug() << "[render worker] processing layer node";
     
-    layerEngine->stamp(graphics->commandBuffers[frameGraph.currentFrame]);
+    // todo: tiling
+    // todo: layer visibility
+    
+    std::vector<VkDescriptorSet> descriptorSets;
+    for (int i = 0; i < frameGraph.canvasData.layers.size(); i++) {
+        Layer& layer = frameGraph.canvasData.layers[i];
+        if (descriptorSetMap.find(layer.id) == descriptorSetMap.end()) { // todo: move to build
+            VkDescriptorSet descriptorSet;
+            layerEngine->createDescriptorSet(layer.imageView, descriptorSet);
+            descriptorSetMap[layer.id] = descriptorSet;
+        }
+        descriptorSets.push_back(descriptorSetMap[layer.id]);
+    }
+    
+    layerEngine->stamp(graphics->commandBuffers[frameGraph.currentFrame],
+                       descriptorSets);
 }
 
 void RenderWorker::onQueueFrame(FrameGraph frameGraph) {
@@ -58,19 +73,15 @@ void RenderWorker::onQueueFrame(FrameGraph frameGraph) {
     
     // todo: move to frame graph building
     
+    brushEngine->setCanvasData(frameGraph.canvasData);
+    
     Layer& layer = frameGraph.canvasData.layers[frameGraph.selectedLayer];
     if (frameBufferMap.find(layer.id) == frameBufferMap.end()) {
         VkFramebuffer frameBuffer;
         brushEngine->createFrameBuffer(layer.imageView, frameBuffer);
         frameBufferMap[layer.id] = frameBuffer;
     }
-    if (descriptorSetMap.find(layer.id) == descriptorSetMap.end()) {
-        VkDescriptorSet descriptorSet;
-        layerEngine->createDescriptorSet(layer.imageView, descriptorSet);
-        descriptorSetMap[layer.id] = descriptorSet;
-    }
-    brushEngine->setTarget(frameBufferMap[layer.id]);
-    layerEngine->setSource(descriptorSetMap[layer.id]);
+    brushEngine->setTarget(frameBufferMap[layer.id]); // todo: should be part of brushstroke data
     
     // ---
     

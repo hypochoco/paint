@@ -19,9 +19,9 @@ public:
     void init();
     void setCanvas(int canvasWidth, int canvasHeight);
     void createDescriptorSet(VkImageView& imageView, VkDescriptorSet& descriptorSet);
-    void setSource(VkDescriptorSet& descriptorSet);
     void setTarget(VkImageView& imageView);
-    void stamp(VkCommandBuffer& commandBuffer);
+    void stamp(VkCommandBuffer& commandBuffer,
+               std::vector<VkDescriptorSet>& descriptorSets);
     void cleanup();
         
 private:
@@ -32,7 +32,6 @@ private:
     VkFramebuffer layerFrameBuffer;
     VkDescriptorSetLayout layerDescriptorSetLayout;
     VkDescriptorPool layerDescriptorPool;
-    VkDescriptorSet layerDescriptorSet;
     VkPipeline layerPipeline;
     VkPipelineLayout layerPipelineLayout;
 

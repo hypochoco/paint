@@ -86,10 +86,9 @@ void BrushEngine::init() {
     
 }
 
-void BrushEngine::setCanvas(int canvasWidth, int canvasHeight) {
+void BrushEngine::setCanvasData(CanvasData canvasData) {
     
-    this->canvasWidth = canvasWidth;
-    this->canvasHeight = canvasHeight;
+    this->canvasData = canvasData;
     
 }
 
@@ -98,8 +97,8 @@ void BrushEngine::createFrameBuffer(VkImageView& imageView, VkFramebuffer& frame
     graphics->createFramebuffer(frameBuffer,
                                 stampRenderPass,
                                 imageView,
-                                canvasWidth,
-                                canvasHeight);
+                                canvasData.width,
+                                canvasData.height);
         
 }
 
@@ -114,6 +113,7 @@ std::vector<BrushPoint> BrushEngine::interpolate(Camera& camera,
                                                  BrushStrokeData& brushStrokeData,
                                                  BrushStrokeDataCache& brushStrokeDataCache) {
 
+    constexpr float brushSize = 0.25f; // todo: move
     constexpr float spacing = 0.05f; // todo: move
 
     std::vector<BrushPoint> stamps;
@@ -126,6 +126,7 @@ std::vector<BrushPoint> BrushEngine::interpolate(Camera& camera,
         carry = 0.0f;
         lastInput = brushStrokeData.brushPoints[0];
         lastInput.position = camera.screenToWorldSpace(windowSize, lastInput.position);
+        lastInput.position.x /= canvasData.aspect; // note: account for canvas size
         brushStrokeDataCache.carry = carry;
         brushStrokeDataCache.currentIndex = 1;
         brushStrokeDataCache.lastInput = lastInput;
@@ -135,6 +136,8 @@ std::vector<BrushPoint> BrushEngine::interpolate(Camera& camera,
         lastInput = brushStrokeDataCache.lastInput;
     }
     
+    lastInput.size = glm::vec2(brushSize, brushSize * canvasData.aspect);
+    
     if (brushStrokeData.nextIndex == 0) { // note: base case
         stamps.push_back(lastInput);
     }
@@ -143,7 +146,8 @@ std::vector<BrushPoint> BrushEngine::interpolate(Camera& camera,
 
         BrushPoint current = brushStrokeData.brushPoints[i];
         current.position = camera.screenToWorldSpace(windowSize, current.position);
-
+        current.position.x /= canvasData.aspect; // note: account for canvas size
+        
         glm::vec2 segment = current.position - lastInput.position;
         float segLen = glm::length(segment);
 
@@ -158,8 +162,10 @@ std::vector<BrushPoint> BrushEngine::interpolate(Camera& camera,
         while (traveled + spacing - carry <= segLen) {
             float step = spacing - carry;
             traveled += step;
-            stamps.push_back(
-                BrushPoint{ lastInput.position + dir * traveled });
+            stamps.push_back(BrushPoint{
+                lastInput.position + dir * traveled,
+                glm::vec2(brushSize, brushSize * canvasData.aspect)
+            });
             carry = 0.0f;
         }
 
@@ -174,24 +180,32 @@ std::vector<BrushPoint> BrushEngine::interpolate(Camera& camera,
     return stamps;
 }
 
+//void BrushEngine::calculateTile(std::vector<BrushPoint> brushPoints) {
+//    
+//    // based on the canvas size
+//    // bottom left and top right
+//    
+//    // required that brush size exists ...
+//    
+//    // calculate based on worldsize ? ... cache this data in canvas data ...
+//    
+//}
+
 void BrushEngine::recordCommandBuffer(VkCommandBuffer& commandBuffer,
                                       std::vector<BrushPoint> brushPoints) {
     
-    int canvasWidth = 1024; // todo: (re)move
-    int canvasHeight = 1024;
-
     graphics->recordBeginRenderPass(commandBuffer,
                                     stampRenderPass,
                                     stampFrameBuffer,
-                                    canvasWidth,
-                                    canvasHeight,
+                                    canvasData.width,
+                                    canvasData.height,
                                     stampPipeline);
 
     graphics->recordSetViewport(commandBuffer,
                                 0.0f,
                                 0.0f,
-                                canvasWidth,
-                                canvasHeight);
+                                canvasData.width,
+                                canvasData.height);
 
     graphics->recordBindDescriptorSet(commandBuffer,
                                       stampPipelineLayout,
@@ -200,14 +214,14 @@ void BrushEngine::recordCommandBuffer(VkCommandBuffer& commandBuffer,
     graphics->recordSetScissor(commandBuffer,
                                0.0f,
                                0.0f,
-                               canvasWidth,
-                               canvasHeight);
+                               canvasData.width,
+                               canvasData.height);
 
     for (BrushPoint brushPoint : brushPoints) {
-
+        
         StampPushConstant pc {
             { brushPoint.position.x, brushPoint.position.y },
-            { 0.25f, 0.25f }
+            { brushPoint.size.x, brushPoint.size.y }
         };
 
         graphics->recordPushConstant(commandBuffer,
