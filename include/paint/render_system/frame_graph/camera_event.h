@@ -10,5 +10,5 @@
 #include "paint/render_system/frame_graph/event.h"
 
 struct CameraEvent : public Event {
-    void build(Node* node) override;
+    void build(FrameGraph& frameGraph, RenderWorker& renderWorker) override;
 };

@@ -18,7 +18,6 @@ struct FrameGraphBuilder {
     glm::vec2 windowSize;
     Camera camera;
     CanvasData canvasData;
-    int selectedLayer;
     
     std::vector<Event*> events;
     
@@ -46,12 +45,7 @@ struct FrameGraphBuilder {
         this->canvasData = canvasData;
         return *this;
     };
-    
-    FrameGraphBuilder& withSelectedLayer(int selectedLayer) {
-        this->selectedLayer = selectedLayer;
-        return *this;
-    };
-    
+        
     FrameGraphBuilder& addCameraEvent();
     FrameGraphBuilder& addBrushStrokeEvent(BrushStrokeData* brushStrokeData);
     FrameGraphBuilder& addLayerEvent();
@@ -63,7 +57,6 @@ struct FrameGraphBuilder {
             windowSize,
             camera,
             canvasData,
-            selectedLayer,
             events
         };
     }

@@ -17,6 +17,7 @@
 #include "paint/layer_engine/layer_engine.h"
 #include "paint/render_system/cache/action_data_cache.h"
 #include "paint/render_system/frame_graph/frame_graph.h"
+#include "paint/render_system/frame_graph/layer_node.h"
 #include "paint/render_system/frame_graph/brush_stroke_node.h"
 
 struct FrameGraph; // forward delcaration
@@ -34,6 +35,8 @@ public:
     ~RenderWorker() {
         delete actionDataCache;
     }
+    
+    void buildBrushStrokeNode(FrameGraph& frameGraph, BrushStrokeData& brushStrokeData);
     
     void processCameraNode(FrameGraph& frameGraph);
     void processBrushStrokeNode(FrameGraph& frameGraph, BrushStrokeNode& brushStrokeNode);

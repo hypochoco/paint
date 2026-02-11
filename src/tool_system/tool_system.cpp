@@ -7,35 +7,45 @@
 
 #include "paint/tool_system/tool_system.h"
 
-#include "paint/tool_system/brush_tool.h"
-
 ToolSystem::ToolSystem() {
     actionBuffer = new ActionBuffer<ACTION_BUFFER_SIZE>;
-    tool = new BrushTool { actionBuffer };
+    brushTool = new BrushTool { actionBuffer };
+    
+    selectTool(brushTool);
 }
 
 ToolSystem::~ToolSystem() {
-    delete tool;
+    selectedTool = nullptr;
+    delete brushTool;
     delete actionBuffer;
+}
+
+void ToolSystem::selectTool(Tool* tool) {
+    if (selectedTool) selectedTool->onDeselect();
+    selectedTool = tool;
+    if (selectedTool) selectedTool->onSelect();
 }
 
 void ToolSystem::leftButtonPressed(int x, int y) {
     qDebug() << "[tool system] left button pressed";
-    if (tool->leftButtonPressed(x, y)) {
+    if (!selectedTool) return;
+    if (selectedTool->leftButtonPressed(x, y)) {
         emit actionsAvailable();
     }
 }
 
 void ToolSystem::leftButtonReleased(int x, int y) {
     qDebug() << "[tool system] left button released";
-    if (tool->leftButtonReleased(x, y)) {
+    if (!selectedTool) return;
+    if (selectedTool->leftButtonReleased(x, y)) {
         emit actionsAvailable();
     }
 }
 
 void ToolSystem::mouseMoved(int x, int y) {
     // note: only triggered when left mouse button down
-    if (tool->mouseMoved(x, y)) {
+    if (!selectedTool) return;
+    if (selectedTool->mouseMoved(x, y)) {
         emit actionsAvailable();
     }
 }

@@ -24,11 +24,12 @@ public:
     void setCanvasData(CanvasData canvasData);
     void createFrameBuffer(VkImageView& imageView, VkFramebuffer& frameBuffer);
     void setTarget(VkFramebuffer& frameBuffer);
+    std::vector<BrushPoint> interpolate(Camera& camera,
+                                        glm::vec2& windowSize,
+                                        BrushStrokeData& brushStrokeData,
+                                        BrushStrokeDataCache& brushStrokeDataCache);
     void stamp(VkCommandBuffer& commandBuffer,
-               Camera& camera,
-               glm::vec2& windowSize,
-               BrushStrokeData& brushStrokeData,
-               BrushStrokeDataCache& brushStrokeDataCache);
+               std::vector<BrushPoint>& brushPoints);
     void cleanup();
         
 private:
@@ -50,11 +51,8 @@ private:
     
     void loadBrushes();
     
-    std::vector<BrushPoint> interpolate(Camera& camera,
-                                        glm::vec2& windowSize,
-                                        BrushStrokeData& brushStrokeData,
-                                        BrushStrokeDataCache& brushStrokeDataCache);
+    void calculateTile(std::vector<BrushPoint>& brushPoints);
     void recordCommandBuffer(VkCommandBuffer& commandBuffer,
-                             std::vector<BrushPoint> brushPoints);
+                             std::vector<BrushPoint>& brushPoints);
         
 };

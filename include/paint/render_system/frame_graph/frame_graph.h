@@ -15,9 +15,11 @@
 #include "paint/render_system/camera.h"
 #include "paint/canvas/canvas_data.h"
 #include "paint/render_system/frame_graph/event.h"
+#include "paint/render_system/frame_graph/node.h"
 
 struct Event; // forward declaration
 struct Node; // forward declaration
+class RenderWorker; // forward delcaration
 
 struct FrameGraph {
     
@@ -26,12 +28,11 @@ struct FrameGraph {
     
     Camera camera;
     CanvasData canvasData;
-    int selectedLayer = -1;
     
     std::vector<Event*> events;
     Node* root;
     
-    void build();
+    void build(RenderWorker& renderWorker);
     void cleanup();
 };
 
@@ -44,7 +45,6 @@ inline QDebug operator<<(QDebug dbg, const FrameGraph &fg) {
         << ", \n\twindowWidth=" << fg.windowSize.x
         << ", windowHeight=" << fg.windowSize.y
         << ", \n\tcamera=" << fg.camera
-        << ", \n\tselectedLayer=" << fg.selectedLayer
         << ", \n\tevents size=" << fg.events.size()
         << "}";
     return dbg;

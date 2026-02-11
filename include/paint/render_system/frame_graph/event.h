@@ -7,11 +7,10 @@
 
 #pragma once
 
-#include "paint/render_system/frame_graph/node.h"
-
-struct Node; // forward declaration
+struct FrameGraph; // forward declaration
+class RenderWorker; // forward declaration
 
 struct Event {
     virtual ~Event() = default;
-    virtual void build(Node* node) = 0;
+    virtual void build(FrameGraph& frameGraph, RenderWorker& renderWorker) = 0;
 };

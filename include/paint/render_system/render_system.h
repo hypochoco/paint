@@ -78,7 +78,6 @@ private slots:
     
 signals:
     void ready();
-    void querySelectedLayer(std::function<void(int)> reply);
     void queryActions(std::function<void(Action*)> reply);
     void queueFrame(FrameGraph frameGraph);
     void requestUpdate();

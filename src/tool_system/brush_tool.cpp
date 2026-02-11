@@ -11,7 +11,14 @@
 
 bool BrushTool::leftButtonPressed(int x, int y) {
     qDebug() << "[brush tool] left button pressed";
-    Action* action = new BrushStroke;
+    
+    int selectedLayer = -1;
+    emit querySelectedLayer([&selectedLayer](int sl) {
+        selectedLayer = sl;
+    });
+    
+    BrushStroke* action = new BrushStroke;
+    action->data.selectedLayer = selectedLayer;
     action->record(x, y);
     actionBuffer->push(action);
     return true;

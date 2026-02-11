@@ -136,7 +136,7 @@ std::vector<BrushPoint> BrushEngine::interpolate(Camera& camera,
         lastInput = brushStrokeDataCache.lastInput;
     }
     
-    lastInput.size = glm::vec2(brushSize, brushSize * canvasData.aspect);
+    lastInput.size = glm::vec2(brushSize, brushSize);
     
     if (brushStrokeData.nextIndex == 0) { // note: base case
         stamps.push_back(lastInput);
@@ -164,7 +164,7 @@ std::vector<BrushPoint> BrushEngine::interpolate(Camera& camera,
             traveled += step;
             stamps.push_back(BrushPoint{
                 lastInput.position + dir * traveled,
-                glm::vec2(brushSize, brushSize * canvasData.aspect)
+                glm::vec2(brushSize, brushSize)
             });
             carry = 0.0f;
         }
@@ -180,19 +180,42 @@ std::vector<BrushPoint> BrushEngine::interpolate(Camera& camera,
     return stamps;
 }
 
-//void BrushEngine::calculateTile(std::vector<BrushPoint> brushPoints) {
-//    
-//    // based on the canvas size
-//    // bottom left and top right
-//    
-//    // required that brush size exists ...
-//    
-//    // calculate based on worldsize ? ... cache this data in canvas data ...
-//    
-//}
+void BrushEngine::calculateTile(std::vector<BrushPoint>& brushPoints) {
+    
+    // note: canvas space actually
+    
+    // note: world space calculation, coordinate system
+    // note: assumes x coord -1 -> 1
+    
+    // todo: different output structure, list of tiles
+    
+    glm::vec2 tile_value(canvasData.width / (float) CanvasData::TILE_WIDTH,
+                         canvasData.height / (float) CanvasData::TILE_HEIGHT);
+    tile_value /= 2.f; // note: account for origin
+        
+    for (BrushPoint& brushPoint : brushPoints) {
+        
+        glm::vec2 bottomLeft = brushPoint.position + brushPoint.size;
+        glm::vec2 topRight = brushPoint.position - brushPoint.size;
+                        
+        glm::vec2 tile_position = tile_value * brushPoint.position;
+
+        qDebug() << "[brush engine] tile "
+        << "\n\ttile value: " << tile_value.x << ", " << tile_value.y
+        << "\n\tbrush point: " << brushPoint.position.x << ", " << brushPoint.position.y
+        << "\n\ttile position" << tile_position.x << ", " << tile_position.y
+        << "\n\ttile position" << std::floor(tile_position.x) << ", " << std::floor(tile_position.y);
+        
+        // todo: cleanup the brushpoints, make separate screenpoints and world points
+        
+        // todo: do something with this
+        
+    }
+    
+}
 
 void BrushEngine::recordCommandBuffer(VkCommandBuffer& commandBuffer,
-                                      std::vector<BrushPoint> brushPoints) {
+                                      std::vector<BrushPoint>& brushPoints) {
     
     graphics->recordBeginRenderPass(commandBuffer,
                                     stampRenderPass,
@@ -217,11 +240,11 @@ void BrushEngine::recordCommandBuffer(VkCommandBuffer& commandBuffer,
                                canvasData.width,
                                canvasData.height);
 
-    for (BrushPoint brushPoint : brushPoints) {
+    for (BrushPoint& brushPoint : brushPoints) {
         
         StampPushConstant pc {
             { brushPoint.position.x, brushPoint.position.y },
-            { brushPoint.size.x, brushPoint.size.y }
+            { brushPoint.size.x, brushPoint.size.y * canvasData.aspect }
         };
 
         graphics->recordPushConstant(commandBuffer,
@@ -238,16 +261,12 @@ void BrushEngine::recordCommandBuffer(VkCommandBuffer& commandBuffer,
 }
 
 void BrushEngine::stamp(VkCommandBuffer& commandBuffer,
-                        Camera& camera,
-                        glm::vec2& windowSize,
-                        BrushStrokeData& brushStrokeData,
-                        BrushStrokeDataCache& brushStrokeDataCache) {
+                        std::vector<BrushPoint>& brushPoints) {
+        
+    // calculateTile(brushPoints);
 
     recordCommandBuffer(commandBuffer,
-                        interpolate(camera,
-                                    windowSize,
-                                    brushStrokeData,
-                                    brushStrokeDataCache));
+                        brushPoints);
     
 }
 

@@ -14,5 +14,5 @@ struct BrushStrokeEvent : public Event {
     BrushStrokeData* brushStrokeData;
     BrushStrokeEvent(BrushStrokeData* brushStrokeData) : brushStrokeData(brushStrokeData) {}
     ~BrushStrokeEvent();
-    void build(Node* node) override;
+    void build(FrameGraph& frameGraph, RenderWorker& renderWorker) override;
 };

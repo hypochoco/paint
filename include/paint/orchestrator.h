@@ -14,6 +14,7 @@
 #include "paint/canvas/canvas.h"
 #include "paint/canvas/canvas_window.h"
 #include "paint/render_system/render_system.h"
+#include "paint/tool_system/tool_system.h"
 #include "paint/main_window.h"
 
 class Orchestrator : public QObject {
@@ -55,10 +56,12 @@ public:
                 this, &Orchestrator::onReady);
         connect(this, &Orchestrator::layersDirty,
                 renderSystem, &RenderSystem::onLayersDirty);
-        connect(renderSystem, &RenderSystem::querySelectedLayer,
-                this, &Orchestrator::onQuerySelectedLayer);
         connect(this, &Orchestrator::cleanup,
                 renderSystem, &RenderSystem::onCleanup);
+    }
+    void induct(ToolSystem* toolSystem) {
+        connect(toolSystem->brushTool, &BrushTool::querySelectedLayer,
+                this, &Orchestrator::onQuerySelectedLayer);
     }
     void induct(MainWindow* mainWindow) {
         this->mainWindow = mainWindow;

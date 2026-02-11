@@ -8,6 +8,5 @@
 #include "paint/tool_system/actions/brush_stroke.h"
 
 void BrushStroke::addEvent(FrameGraphBuilder& builder) {
-    qDebug() << "[brush stroke] event created";
     builder.addBrushStrokeEvent(data.clone());
 }

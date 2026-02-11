@@ -9,6 +9,6 @@
 
 #include "paint/render_system/frame_graph/camera_node.h"
 
-void CameraEvent::build(Node* node) {
-    node->children.push_back(new CameraNode);
+void CameraEvent::build(FrameGraph& frameGraph, RenderWorker& renderWorker) {
+    frameGraph.root->children.push_back(new CameraNode);
 }

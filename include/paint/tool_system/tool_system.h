@@ -16,12 +16,16 @@
 #include "paint/tool_system/actions/action_state.h"
 #include "paint/tool_system/actions/action_buffer.h"
 
+#include "paint/tool_system/brush_tool.h"
+
 class ToolSystem : public QObject {
     Q_OBJECT
     
 public:
     ToolSystem();
     ~ToolSystem();
+    
+    BrushTool* brushTool;
     
 public slots:
     void leftButtonPressed(int x, int y);
@@ -34,8 +38,8 @@ signals:
     void actionsAvailable();
     
 private:
+    Tool* selectedTool;
     ActionBuffer<ACTION_BUFFER_SIZE>* actionBuffer;
-    Tool* tool; // todo: list / mapping of tools
     
-    void selectTool() {}; // todo: deselect current, select new
+    void selectTool(Tool* tool);
 };

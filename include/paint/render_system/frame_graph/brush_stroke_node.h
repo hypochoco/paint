@@ -13,7 +13,7 @@
 #include "paint/render_system/render_worker.h"
 
 struct BrushStrokeNode : public Node {
-    BrushStrokeData& brushStrokeData;
-    BrushStrokeNode(BrushStrokeData& brushStrokeData) : brushStrokeData(brushStrokeData) {}
+    std::vector<BrushPoint> brushPoints;
+    BrushStrokeNode(std::vector<BrushPoint> brushPoints) : brushPoints(brushPoints) {}
     void process(FrameGraph& frameGraph, RenderWorker& renderWorker) override;
 };

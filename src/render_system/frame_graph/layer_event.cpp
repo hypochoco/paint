@@ -9,6 +9,6 @@
 
 #include "paint/render_system/frame_graph/layer_node.h"
 
-void LayerEvent::build(Node* node) {
-    node->children.push_back(new LayerNode);
+void LayerEvent::build(FrameGraph& frameGraph, RenderWorker& renderWorker) {
+    frameGraph.root->children.push_back(new LayerNode);
 }

@@ -12,7 +12,6 @@
 #include "paint/render_system/frame_graph/layer_event.h"
 
 FrameGraphBuilder& FrameGraphBuilder::addCameraEvent() {
-    qDebug() << "[frame graph builder] adding camera event";
     events.push_back(new CameraEvent);
     return *this;
 };
@@ -23,7 +22,6 @@ FrameGraphBuilder& FrameGraphBuilder::addBrushStrokeEvent(BrushStrokeData* brush
 };
 
 FrameGraphBuilder& FrameGraphBuilder::addLayerEvent() {
-    qDebug() << "[frame graph builder] adding layer event";
     events.push_back(new LayerEvent);
     return *this;
 };

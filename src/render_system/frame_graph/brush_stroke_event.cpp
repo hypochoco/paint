@@ -11,7 +11,7 @@
 
 BrushStrokeEvent::~BrushStrokeEvent() { delete brushStrokeData; }
 
-void BrushStrokeEvent::build(Node* node) {
+void BrushStrokeEvent::build(FrameGraph& frameGraph, RenderWorker& renderWorker) {
     // todo: tile calculation here
-    node->children.push_back( new BrushStrokeNode { *brushStrokeData });
+    renderWorker.buildBrushStrokeNode(frameGraph, *brushStrokeData);
 }

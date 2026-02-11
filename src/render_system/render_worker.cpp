@@ -9,8 +9,30 @@
 
 #include <chrono>
 
+void RenderWorker::buildBrushStrokeNode(FrameGraph& frameGraph, BrushStrokeData& brushStrokeData) {
+        
+    // note: without caching 0-3 ms, with caching 0 ms
+    
+    std::vector<BrushPoint> brushPoints =
+        brushEngine->interpolate(frameGraph.camera,
+                                 frameGraph.windowSize,
+                                 brushStrokeData,
+                                 actionDataCache->getBrushStrokeDataCache(brushStrokeData.id));
+    
+//    brushEngine->calculateTile(brushPoints);
+    
+    BrushStrokeNode* brushStrokeNode = new BrushStrokeNode { brushPoints }; // todo: make these per tile
+    
+    LayerNode* layerNode = new LayerNode; // todo: take inputs, handle multiple ways of construction
+    layerNode->children.push_back(brushStrokeNode);
+        
+    frameGraph.root->children.push_back(layerNode);
+
+}
+
+// ---
+
 void RenderWorker::processCameraNode(FrameGraph& frameGraph) {
-    qDebug() << "[render worker] processing camera node";
     
     glm::mat4 view, proj;
     frameGraph.camera.calculateMatrices(view, proj, frameGraph.windowSize);
@@ -19,32 +41,13 @@ void RenderWorker::processCameraNode(FrameGraph& frameGraph) {
 }
 
 void RenderWorker::processBrushStrokeNode(FrameGraph& frameGraph, BrushStrokeNode& brushStrokeNode) {
-    qDebug() << "[render worker] processing brush stroke node"
-    << "\n\tid: " << brushStrokeNode.brushStrokeData.id
-    << "\n\traw brush stroke size: " << brushStrokeNode.brushStrokeData.brushPoints.size();
     
-    // note: without caching 0-3 ms, with caching 0 ms
-    
-    auto start = std::chrono::high_resolution_clock::now();
-        
     brushEngine->stamp(graphics->commandBuffers[frameGraph.currentFrame],
-                       frameGraph.camera,
-                       frameGraph.windowSize,
-                       brushStrokeNode.brushStrokeData,
-                       actionDataCache->getBrushStrokeDataCache(brushStrokeNode.brushStrokeData.id));
-    
-    processLayerNode(frameGraph); // todo: temp
+                       brushStrokeNode.brushPoints);
         
-    auto stop = std::chrono::high_resolution_clock::now();
-    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(stop - start);
-    
-    qDebug() << "[render worker] processing brush stroke node took: "
-    << duration.count() << " milliseconds";
-    
 }
 
 void RenderWorker::processLayerNode(FrameGraph& frameGraph) {
-    qDebug() << "[render worker] processing layer node";
     
     // todo: tiling
     // todo: layer visibility
@@ -64,24 +67,30 @@ void RenderWorker::processLayerNode(FrameGraph& frameGraph) {
                        descriptorSets);
 }
 
+// --- 
+
 void RenderWorker::onQueueFrame(FrameGraph frameGraph) {
-    qDebug() << "[render worker] frame graph: \n" << frameGraph;
+    qDebug() << "[render worker] start frame: \n" << frameGraph;
     
-    frameGraph.build(); // todo
+    auto start = std::chrono::high_resolution_clock::now();
+    
+    frameGraph.build(*this);
     
     // ---
     
     // todo: move to frame graph building
     
+    int selectedLayer = 0; // todo: get this from brush stroke data
+    
     brushEngine->setCanvasData(frameGraph.canvasData);
     
-    Layer& layer = frameGraph.canvasData.layers[frameGraph.selectedLayer];
+    Layer& layer = frameGraph.canvasData.layers[selectedLayer];
     if (frameBufferMap.find(layer.id) == frameBufferMap.end()) {
         VkFramebuffer frameBuffer;
         brushEngine->createFrameBuffer(layer.imageView, frameBuffer);
         frameBufferMap[layer.id] = frameBuffer;
     }
-    brushEngine->setTarget(frameBufferMap[layer.id]); // todo: should be part of brushstroke data
+    brushEngine->setTarget(frameBufferMap[layer.id]);
     
     // ---
     
@@ -94,7 +103,13 @@ void RenderWorker::onQueueFrame(FrameGraph frameGraph) {
     
     frameGraph.cleanup();
     
-    emit frameReady(frameGraph); // todo: error when adding the canvas ?
+    auto stop = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(stop - start);
+    
+    qDebug() << "[render worker] processing frame took: "
+    << duration.count() << " milliseconds";
+
+    emit frameReady(frameGraph);
 }
 
 void RenderWorker::cleanup() {

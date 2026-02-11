@@ -162,11 +162,7 @@ void RenderSystem::startFrame() {
         .withCamera(camera)
         .withCanvasData(*canvasData)
         .withWindowSize(windowWidth, windowHeight);
-    
-    emit querySelectedLayer([&builder](int index) {
-        builder.withSelectedLayer(index);
-    });
-    
+        
     if (dirtyFlags.dirty(DirtyFlag::CAMERA, graphics->currentFrame)) {
         builder.addCameraEvent();
     }

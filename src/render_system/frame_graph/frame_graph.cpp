@@ -7,10 +7,10 @@
 
 #include "paint/render_system/frame_graph/frame_graph.h"
 
-void FrameGraph::build() {
+void FrameGraph::build(RenderWorker& renderWorker) {
     root = new Node;
     for (Event* event : events) {
-        event->build(root);
+        event->build(*this, renderWorker);
     }
 }
 
