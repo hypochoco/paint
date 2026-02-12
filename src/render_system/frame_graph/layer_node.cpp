@@ -8,5 +8,5 @@
 #include "paint/render_system/frame_graph/layer_node.h"
 
 void LayerNode::process(FrameGraph& frameGraph, RenderWorker& renderWorker) {
-    renderWorker.processLayerNode(frameGraph);
+    renderWorker.processLayerNode(frameGraph, *this);
 }

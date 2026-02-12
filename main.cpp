@@ -77,6 +77,7 @@ int main(int argc, char *argv[]) {
     orchestrator->induct(canvas);
     orchestrator->induct(canvasWindow);
     orchestrator->induct(renderSystem);
+    orchestrator->induct(toolSystem);
     orchestrator->induct(mainWindow);
     
     // setup connections

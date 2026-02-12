@@ -75,8 +75,8 @@ void LayerEngine::setTarget(VkImageView& imageView) {
     
 }
 
-void LayerEngine::stamp(VkCommandBuffer& commandBuffer,
-                        std::vector<VkDescriptorSet>& descriptorSets) {
+void LayerEngine::recordCommandBuffer(VkCommandBuffer& commandBuffer,
+                                      std::vector<VkDescriptorSet>& descriptorSets) {
         
     graphics->recordBeginRenderPass(commandBuffer,
                                     layerRenderPass,
@@ -90,7 +90,7 @@ void LayerEngine::stamp(VkCommandBuffer& commandBuffer,
                                 0.0f,
                                 canvasWidth,
                                 canvasHeight);
-    
+        
     graphics->recordSetScissor(commandBuffer,
                                0.f,
                                0.f,
@@ -116,6 +116,59 @@ void LayerEngine::stamp(VkCommandBuffer& commandBuffer,
     graphics->recordEndRenderPass(commandBuffer);
 
 }
+
+void LayerEngine::recordCommandBuffer(VkCommandBuffer& commandBuffer,
+                                      std::vector<glm::ivec2>& tiles,
+                                      std::vector<VkDescriptorSet>& descriptorSets) {
+        
+    graphics->recordBeginRenderPass(commandBuffer,
+                                    layerRenderPass,
+                                    layerFrameBuffer,
+                                    canvasWidth,
+                                    canvasHeight,
+                                    layerPipeline);
+    
+    graphics->recordSetViewport(commandBuffer,
+                                0.0f,
+                                0.0f,
+                                canvasWidth,
+                                canvasHeight);
+    
+    for (glm::ivec2 tile : tiles) {
+        
+        // todo: edge cases aren't right, not drawing at very bottom
+            // canvas size: 1024, 2050
+        
+        if ((canvasWidth - tile.x) <= 0 || (canvasHeight - tile.y) <= 0) continue;
+        
+        graphics->recordSetScissor(commandBuffer,
+                                   tile.x,
+                                   tile.y,
+                                   CanvasData::TILE_WIDTH,
+                                   CanvasData::TILE_HEIGHT);
+        
+        graphics->recordClearAttachment(commandBuffer, // clear canvas
+                                        tile.x,
+                                        tile.y,
+                                        std::min(CanvasData::TILE_WIDTH, canvasWidth - tile.x),
+                                        std::min(CanvasData::TILE_HEIGHT, canvasHeight - tile.y));
+
+        for (VkDescriptorSet& descriptorSet : descriptorSets) {
+            
+            graphics->recordBindDescriptorSet(commandBuffer,
+                                              layerPipelineLayout,
+                                              descriptorSet);
+
+            graphics->recordDraw(commandBuffer);
+            
+        }
+        
+    }
+    
+    graphics->recordEndRenderPass(commandBuffer);
+
+}
+
 
 void LayerEngine::cleanup() {
     

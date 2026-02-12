@@ -3,23 +3,17 @@
 
 Painting application:
 
-- [ ] Move selected layer into the brush stroke action
+- [ ] Bug: Brushes on different layers are not merging correctly
+- [ ] Bug: Purple flicker
+- [ ] Bug: Brush / Layer engine, not drawing at edges
 
-- [x] Rendering from top down on affected layers
-- [x] Layer deletion
-- [x] Get layer targets working
+- [ ] Clean up the brush engine
 
 - [ ] Handle multiple canvas windows
 - [ ] Background gray color
 
-- [ ] Tiling
-    - [x] arbitrary sized canvas
-    - [x] fix mouse + brush size positions
-    - [ ] general tiling system
-        - [ ] tile location calculation
-        
-- [ ] Better way of handling canvas size ? dedicated quad ?
-    
+- [ ] Better way of handling canvas size / space, world space
+
 - [ ] Brush panel
 
 - [ ] Layers 
@@ -30,19 +24,14 @@ Painting application:
     - [x] layers after starting layer are clear
     - [x] delete and reordering layers
     - [x] cleanup canvas creation and initialization
-    
     - [x] fix layers are clear after layer switching
+    - [x] White around brush edges 
     
     - [ ] Layer renaming saved to canvas data structure
-    
     - [ ] Crash on deleting the background layer 
         - [ ] Draw blank if there is no canvas   
-    
-    - [x] White around brush edges ? 
-    - [ ] Its now a black border, but what value should it actually be then ?
-        - [ ] Bug in merging between layers, should be seemless but isnt ?
 
-- [ ] Frontend interaction
+- [ ] Layer panel
     - [x] create frontend
     - [x] connect frontend functionality 
     - [ ] bottom to top 
@@ -50,6 +39,17 @@ Painting application:
     
 - [ ] Undo
     - [ ] image backups 
+    
+- [x] Rendering from top down on affected layers
+- [x] Layer deletion
+- [x] Get layer targets working
+
+- [x] Tiling
+    - [x] arbitrary sized canvas
+    - [x] fix mouse + brush size positions
+    - [x] general tiling system
+        - [x] tile location calculation
+    - [x] Move selected layer into the brush stroke action
             
 ---
 

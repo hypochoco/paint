@@ -21,6 +21,7 @@
 #include "paint/render_system/frame_graph/brush_stroke_node.h"
 
 struct FrameGraph; // forward delcaration
+struct LayerNode; // forward delcaration
 struct BrushStrokeNode; // forward delcaration
 
 class RenderWorker : public QObject {
@@ -40,7 +41,7 @@ public:
     
     void processCameraNode(FrameGraph& frameGraph);
     void processBrushStrokeNode(FrameGraph& frameGraph, BrushStrokeNode& brushStrokeNode);
-    void processLayerNode(FrameGraph& frameGraph);
+    void processLayerNode(FrameGraph& frameGraph, LayerNode& layerNode);
     
     void cleanup();
     

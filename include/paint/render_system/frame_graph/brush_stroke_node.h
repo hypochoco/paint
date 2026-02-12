@@ -13,7 +13,8 @@
 #include "paint/render_system/render_worker.h"
 
 struct BrushStrokeNode : public Node {
-    std::vector<BrushPoint> brushPoints;
-    BrushStrokeNode(std::vector<BrushPoint> brushPoints) : brushPoints(brushPoints) {}
+    std::unordered_map<glm::ivec2, std::vector<BrushPoint>> canvasMap;
+    BrushStrokeNode(std::unordered_map<glm::ivec2, std::vector<BrushPoint>> canvasMap)
+    : canvasMap(canvasMap) {}
     void process(FrameGraph& frameGraph, RenderWorker& renderWorker) override;
 };

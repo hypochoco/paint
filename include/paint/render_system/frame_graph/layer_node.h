@@ -12,5 +12,8 @@
 #include "paint/render_system/render_worker.h"
 
 struct LayerNode : public Node {
+    std::vector<glm::ivec2> tiles;
+    LayerNode() {}
+    LayerNode(std::vector<glm::ivec2> tiles) : tiles(tiles) {}
     void process(FrameGraph& frameGraph, RenderWorker& renderWorker) override;
 };

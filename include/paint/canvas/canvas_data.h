@@ -7,6 +7,8 @@
 
 #pragma once
 
+#include <QDebug>
+
 #include "paint/canvas/layer.h"
 
 struct CanvasData {

@@ -13,21 +13,47 @@ void RenderWorker::buildBrushStrokeNode(FrameGraph& frameGraph, BrushStrokeData&
         
     // note: without caching 0-3 ms, with caching 0 ms
     
+    brushEngine->setCanvasData(frameGraph.canvasData);
+    
+    // todo: throw an error if selected layer is not visible
+    // todo: optimize by grouping everything under the same layer if all drawn
+    
+    Layer& selectedLayer = frameGraph.canvasData.layers[brushStrokeData.selectedLayer];
+    if (frameBufferMap.find(selectedLayer.id) == frameBufferMap.end()) {
+        VkFramebuffer frameBuffer;
+        brushEngine->createFrameBuffer(selectedLayer.imageView, frameBuffer);
+        frameBufferMap[selectedLayer.id] = frameBuffer;
+    }
+    brushEngine->setTarget(frameBufferMap[selectedLayer.id]);
+    
     std::vector<BrushPoint> brushPoints =
         brushEngine->interpolate(frameGraph.camera,
                                  frameGraph.windowSize,
                                  brushStrokeData,
                                  actionDataCache->getBrushStrokeDataCache(brushStrokeData.id));
     
-//    brushEngine->calculateTile(brushPoints);
+    if (brushPoints.size() == 0) return;
     
-    BrushStrokeNode* brushStrokeNode = new BrushStrokeNode { brushPoints }; // todo: make these per tile
+    auto tileMap = brushEngine->calculateTile(brushPoints);
     
-    LayerNode* layerNode = new LayerNode; // todo: take inputs, handle multiple ways of construction
-    layerNode->children.push_back(brushStrokeNode);
+    std::vector<glm::ivec2> tiles;
+    std::unordered_map<glm::ivec2, std::vector<BrushPoint>> canvasMap;
+    
+    for (auto& it : tileMap) {
         
-    frameGraph.root->children.push_back(layerNode);
+        glm::ivec2 start = brushEngine->tileToCanvas(it.first);
+        tiles.push_back(start);
+        canvasMap[start] = it.second;
+        
+    }
+    
+    BrushStrokeNode* brushStrokeNode = new BrushStrokeNode { canvasMap };
+    
+    LayerNode* layerNode = new LayerNode { tiles };
+    layerNode->children.push_back(brushStrokeNode);
 
+    frameGraph.root->children.push_back(layerNode);
+    
 }
 
 // ---
@@ -42,14 +68,13 @@ void RenderWorker::processCameraNode(FrameGraph& frameGraph) {
 
 void RenderWorker::processBrushStrokeNode(FrameGraph& frameGraph, BrushStrokeNode& brushStrokeNode) {
     
-    brushEngine->stamp(graphics->commandBuffers[frameGraph.currentFrame],
-                       brushStrokeNode.brushPoints);
+    brushEngine->recordCommandBuffer(graphics->commandBuffers[frameGraph.currentFrame],
+                                     brushStrokeNode.canvasMap);
         
 }
 
-void RenderWorker::processLayerNode(FrameGraph& frameGraph) {
+void RenderWorker::processLayerNode(FrameGraph& frameGraph, LayerNode& layerNode) {
     
-    // todo: tiling
     // todo: layer visibility
     
     std::vector<VkDescriptorSet> descriptorSets;
@@ -63,8 +88,15 @@ void RenderWorker::processLayerNode(FrameGraph& frameGraph) {
         descriptorSets.push_back(descriptorSetMap[layer.id]);
     }
     
-    layerEngine->stamp(graphics->commandBuffers[frameGraph.currentFrame],
-                       descriptorSets);
+    if (layerNode.tiles.size() != 0) {
+        layerEngine->recordCommandBuffer(graphics->commandBuffers[frameGraph.currentFrame],
+                                         layerNode.tiles,
+                                         descriptorSets);
+    } else {
+        layerEngine->recordCommandBuffer(graphics->commandBuffers[frameGraph.currentFrame],
+                                         descriptorSets);
+    }
+    
 }
 
 // --- 
@@ -75,24 +107,6 @@ void RenderWorker::onQueueFrame(FrameGraph frameGraph) {
     auto start = std::chrono::high_resolution_clock::now();
     
     frameGraph.build(*this);
-    
-    // ---
-    
-    // todo: move to frame graph building
-    
-    int selectedLayer = 0; // todo: get this from brush stroke data
-    
-    brushEngine->setCanvasData(frameGraph.canvasData);
-    
-    Layer& layer = frameGraph.canvasData.layers[selectedLayer];
-    if (frameBufferMap.find(layer.id) == frameBufferMap.end()) {
-        VkFramebuffer frameBuffer;
-        brushEngine->createFrameBuffer(layer.imageView, frameBuffer);
-        frameBufferMap[layer.id] = frameBuffer;
-    }
-    brushEngine->setTarget(frameBufferMap[layer.id]);
-    
-    // ---
     
     graphics->beginCommandBuffer(frameGraph.currentFrame);
     

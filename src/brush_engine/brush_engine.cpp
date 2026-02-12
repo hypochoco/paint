@@ -180,42 +180,72 @@ std::vector<BrushPoint> BrushEngine::interpolate(Camera& camera,
     return stamps;
 }
 
-void BrushEngine::calculateTile(std::vector<BrushPoint>& brushPoints) {
+std::unordered_map<glm::ivec2, std::vector<BrushPoint>>
+BrushEngine::calculateTile(std::vector<BrushPoint>& brushPoints) {
     
     // note: canvas space actually
-    
     // note: world space calculation, coordinate system
     // note: assumes x coord -1 -> 1
     
     // todo: different output structure, list of tiles
+    // todo: cleanup the brushpoints, make separate screenpoints and world points
     
-    glm::vec2 tile_value(canvasData.width / (float) CanvasData::TILE_WIDTH,
+    std::unordered_map<glm::ivec2, std::vector<BrushPoint>> tileMap;
+    
+    if (brushPoints.size() == 0) return tileMap;
+    
+    glm::vec2 tileValue(canvasData.width / (float) CanvasData::TILE_WIDTH,
                          canvasData.height / (float) CanvasData::TILE_HEIGHT);
-    tile_value /= 2.f; // note: account for origin
-        
+    tileValue /= 2.f; // note: account for origin
+    glm::ivec2 tileMin = glm::ivec2(glm::ceil(-tileValue));
+    glm::ivec2 tileMax = glm::ivec2(glm::ceil(tileValue));
+            
     for (BrushPoint& brushPoint : brushPoints) {
         
-        glm::vec2 bottomLeft = brushPoint.position + brushPoint.size;
-        glm::vec2 topRight = brushPoint.position - brushPoint.size;
-                        
-        glm::vec2 tile_position = tile_value * brushPoint.position;
-
-        qDebug() << "[brush engine] tile "
-        << "\n\ttile value: " << tile_value.x << ", " << tile_value.y
-        << "\n\tbrush point: " << brushPoint.position.x << ", " << brushPoint.position.y
-        << "\n\ttile position" << tile_position.x << ", " << tile_position.y
-        << "\n\ttile position" << std::floor(tile_position.x) << ", " << std::floor(tile_position.y);
+        glm::vec2 bottomLeft = brushPoint.position - 0.5f * brushPoint.size;
+        glm::vec2 topRight = brushPoint.position + 0.5f * brushPoint.size;
         
-        // todo: cleanup the brushpoints, make separate screenpoints and world points
+        glm::ivec2 bottomLeftTile = glm::ivec2(glm::floor(tileValue * bottomLeft));
+        glm::ivec2 topRightTile = glm::ivec2(glm::floor(tileValue * topRight));
         
-        // todo: do something with this
-        
+//        qDebug() << "[brush engine] bottom left:"
+//        << "\n\tposition" << bottomLeft.x << ", " << bottomLeft.y
+//        << "\n\traw tile" << (tileValue * bottomLeft).x << ", " << (tileValue * bottomLeft).y
+//        << "\n\ttile" << bottomLeftTile.x << ", " << bottomLeftTile.y;
+//        
+//        qDebug() << "[brush engine] top right:"
+//        << "\n\tposition" << topRightTile.x << ", " << topRightTile.y
+//        << "\n\traw tile" << (tileValue * topRight).x << ", " << (tileValue * topRight).y
+//        << "\n\ttile" << topRightTile.x << ", " << topRightTile.y;
+         
+        for (int i = std::max(bottomLeftTile.x, tileMin.x); i <= std::min(topRightTile.x, tileMax.x); i++) {
+            for (int j = std::max(bottomLeftTile.y, tileMin.y); j <= std::min(topRightTile.y, tileMax.y); j++) {
+                tileMap[glm::ivec2(i, j)].push_back(brushPoint);
+            }
+        }
     }
+    
+//    qDebug() << "[brush engine] calculated tiles: " << tiles.size();
+//    for (auto& tile : tiles) {
+//        qDebug() << "\t" << tile.x << ", " << tile.y;
+//    }
+    
+    return tileMap;
+    
+}
+
+glm::ivec2 BrushEngine::tileToCanvas(glm::ivec2 tile) {
+    
+    // todo: what about the odd case ?
+    
+    glm::ivec2 center(canvasData.width / 2, canvasData.height / 2);
+    
+    return center + tile * glm::ivec2(CanvasData::TILE_WIDTH, CanvasData::TILE_HEIGHT);
     
 }
 
 void BrushEngine::recordCommandBuffer(VkCommandBuffer& commandBuffer,
-                                      std::vector<BrushPoint>& brushPoints) {
+                                      std::unordered_map<glm::ivec2, std::vector<BrushPoint>>& canvasMap) {
     
     graphics->recordBeginRenderPass(commandBuffer,
                                     stampRenderPass,
@@ -233,41 +263,35 @@ void BrushEngine::recordCommandBuffer(VkCommandBuffer& commandBuffer,
     graphics->recordBindDescriptorSet(commandBuffer,
                                       stampPipelineLayout,
                                       stampDescriptorSet);
+    
+    for (auto& it : canvasMap) {
+                
+        graphics->recordSetScissor(commandBuffer, // todo: does this actually work ?
+                                   it.first.x,
+                                   it.first.y,
+                                   CanvasData::TILE_WIDTH,
+                                   CanvasData::TILE_HEIGHT);
 
-    graphics->recordSetScissor(commandBuffer,
-                               0.0f,
-                               0.0f,
-                               canvasData.width,
-                               canvasData.height);
+        for (BrushPoint& brushPoint : it.second) {
+            
+            StampPushConstant pc {
+                { brushPoint.position.x, brushPoint.position.y },
+                { brushPoint.size.x, brushPoint.size.y * canvasData.aspect }
+            };
 
-    for (BrushPoint& brushPoint : brushPoints) {
+            graphics->recordPushConstant(commandBuffer,
+                                         stampPipelineLayout,
+                                         sizeof(pc),
+                                         &pc);
+
+            graphics->recordDraw(commandBuffer);
+
+        }
         
-        StampPushConstant pc {
-            { brushPoint.position.x, brushPoint.position.y },
-            { brushPoint.size.x, brushPoint.size.y * canvasData.aspect }
-        };
-
-        graphics->recordPushConstant(commandBuffer,
-                                     stampPipelineLayout,
-                                     sizeof(pc),
-                                     &pc);
-
-        graphics->recordDraw(commandBuffer);
-
     }
 
     graphics->recordEndRenderPass(commandBuffer);
 
-}
-
-void BrushEngine::stamp(VkCommandBuffer& commandBuffer,
-                        std::vector<BrushPoint>& brushPoints) {
-        
-    // calculateTile(brushPoints);
-
-    recordCommandBuffer(commandBuffer,
-                        brushPoints);
-    
 }
 
 void BrushEngine::cleanup() {
