@@ -112,9 +112,9 @@ std::vector<BrushPoint> BrushEngine::interpolate(Camera& camera,
                                                  glm::vec2& windowSize,
                                                  BrushStrokeData& brushStrokeData,
                                                  BrushStrokeDataCache& brushStrokeDataCache) {
-
-    constexpr float brushSize = 0.25f; // todo: move
-    constexpr float spacing = 0.05f; // todo: move
+    
+    const float& brushSize = brushStrokeData.brushSize;
+    const float& spacing = brushStrokeData.brushSpacing;
 
     std::vector<BrushPoint> stamps;
     if (brushStrokeData.brushPoints.empty()) return stamps;

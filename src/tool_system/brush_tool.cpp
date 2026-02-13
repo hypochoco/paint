@@ -13,12 +13,23 @@ bool BrushTool::leftButtonPressed(int x, int y) {
     qDebug() << "[brush tool] left button pressed";
     
     int selectedLayer = -1;
+    float brushSize = 0.05f;
+    float brushSpacing = 0.01f;
+    
     emit querySelectedLayer([&selectedLayer](int sl) {
         selectedLayer = sl;
+    });
+    emit queryBrushSize([&brushSize](float bs) {
+        brushSize = bs;
+    });
+    emit queryBrushSpacing([&brushSpacing](float bs) {
+        brushSpacing = bs;
     });
     
     BrushStroke* action = new BrushStroke;
     action->data.selectedLayer = selectedLayer;
+    action->data.brushSize = brushSize;
+    action->data.brushSpacing = brushSpacing;
     action->record(x, y);
     actionBuffer->push(action);
     return true;

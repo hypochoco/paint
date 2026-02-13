@@ -24,6 +24,7 @@
 //#include <QMessageBox>       // Alert/confirmation dialogs
 
 #include "paint/panels/layer_panel.h"
+#include "paint/panels/brushes_panel.h"
 
 class MainWindow : public QMainWindow {
     Q_OBJECT
@@ -31,11 +32,19 @@ class MainWindow : public QMainWindow {
 public:
     MainWindow();
     
+    QDockWidget* colorsDock;
+    
     LayersPanel* layersPanel;
+    QDockWidget* layersDock;
+    
+    BrushesPanel* brushesPanel;
+    QDockWidget* brushesDock;
 
 private:
     void createMenus();
     void createToolbar();
     void createDockPanels();
+    
+    void test();
     
 };

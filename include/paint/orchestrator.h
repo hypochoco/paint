@@ -62,9 +62,14 @@ public:
     void induct(ToolSystem* toolSystem) {
         connect(toolSystem->brushTool, &BrushTool::querySelectedLayer,
                 this, &Orchestrator::onQuerySelectedLayer);
+        connect(toolSystem->brushTool, &BrushTool::queryBrushSize,
+                this, &Orchestrator::onQueryBrushSize);
+        connect(toolSystem->brushTool, &BrushTool::queryBrushSpacing,
+                this, &Orchestrator::onQueryBrushSpacing);
     }
     void induct(MainWindow* mainWindow) {
         this->mainWindow = mainWindow;
+        
         connect(mainWindow->layersPanel, &LayersPanel::signalSync,
                 this, &Orchestrator::onSync);
         connect(mainWindow->layersPanel, &LayersPanel::signalAddLayer,
@@ -77,6 +82,11 @@ public:
                 mainWindow->layersPanel, &LayersPanel::onSelectedLayer);
         connect(mainWindow->layersPanel, &LayersPanel::dirty,
                 this, &Orchestrator::onLayersDirty);
+        
+        connect(this, &Orchestrator::brushSize,
+                mainWindow->brushesPanel, &BrushesPanel::onBrushSize);
+        connect(this, &Orchestrator::brushSpacing,
+                mainWindow->brushesPanel, &BrushesPanel::onBrushSpacing);
     }
         
 public slots:
@@ -108,6 +118,12 @@ public slots:
     void onQuerySelectedLayer(std::function<void(int)> reply) {
         emit selectedLayer(reply);
     }
+    void onQueryBrushSize(std::function<void(float)> reply) {
+        emit brushSize(reply);
+    }
+    void onQueryBrushSpacing(std::function<void(float)> reply) {
+        emit brushSpacing(reply);
+    }
     void onSurfaceAboutToBeDestroyed() {
         // todo: handle multiple canvas windows
         graphics->deviceWaitIdle();
@@ -127,6 +143,8 @@ signals:
     
     void layersDirty();
     void selectedLayer(std::function<void(int)> reply);
+    void brushSize(std::function<void(float)> reply);
+    void brushSpacing(std::function<void(float)> reply);
     
 private:
     Graphics* graphics;

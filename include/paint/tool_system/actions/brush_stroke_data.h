@@ -16,6 +16,10 @@ struct BrushStrokeData : public ActionData {
     
     int nextIndex = 0;
     int selectedLayer = -1;
+    
+    float brushSize = 0.1f;
+    float brushSpacing = 0.1f;
+    
     std::vector<BrushPoint> brushPoints;
     
     BrushStrokeData* clone() override {

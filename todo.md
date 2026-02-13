@@ -8,13 +8,14 @@ Painting application:
 - [ ] Bug: Brush / Layer engine, not drawing at edges
 
 - [ ] Clean up the brush engine
-
+    - [ ] Better way of handling canvas size / space, world space
 - [ ] Handle multiple canvas windows
 - [ ] Background gray color
 
-- [ ] Better way of handling canvas size / space, world space
-
 - [ ] Brush panel
+    - [x] Panel creation
+    - [ ] Panel functionality 
+        - [ ] brush size and spacing
 
 - [ ] Layers 
     - [x] Sync canvas and layer panel 
@@ -51,23 +52,20 @@ Painting application:
         - [x] tile location calculation
     - [x] Move selected layer into the brush stroke action
             
----
-
 - [ ] Brush tool
     - [x] Get stamping back
     - [x] Interpolation
     - [ ] Undo action / image backups 
-        - [ ] Switch between canvas images (per layer)
+        - [x] Switch between canvas images (per layer)
         - [ ] Copy image to another images (per layer)
         - [x] Some kind of data structure for this ?
-        - [ ] General canvas work, layers, tiling
+        - [x] General canvas work, layers, tiling
     
     - [ ] More interpolation methods 
     - [ ] Round brush
     - [ ] Brush opacity
     - [ ] Brush settings UI
 
-- [ ] Tiling
 - [ ] Layer visibility 
 - [ ] Canvas flipping
 - [ ] Zoom tool

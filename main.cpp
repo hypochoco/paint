@@ -22,8 +22,13 @@
 #include "paint/tool_system/tool_system.h"
 #include "paint/canvas/canvas_window.h"
 #include "paint/canvas/canvas.h"
+#include "paint/panels/brushes_panel.h"
 
 int main(int argc, char *argv[]) {
+    
+    // note: places menu at top of window
+    // QCoreApplication::setAttribute(Qt::AA_DontUseNativeMenuBar);
+    
     QApplication app(argc, argv);
         
     // vulkan instance
@@ -70,7 +75,7 @@ int main(int argc, char *argv[]) {
     
     MainWindow* mainWindow = new MainWindow();
     mainWindow->setWindowTitle("Paint Application");
-    
+        
     // orchestrator
 
     Orchestrator* orchestrator = new Orchestrator(graphics);
