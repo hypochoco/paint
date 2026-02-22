@@ -13,6 +13,8 @@
 
 #include <algorithm>
 
+#include <glm/glm.hpp>
+
 class HueIndicator : public QWidget {
     Q_OBJECT
     
@@ -35,6 +37,18 @@ public:
         QPainter p(&indicatorCache);
         p.fillRect(rect(), QColor::fromHsv(hue, saturation, value));
         painter.drawImage(0, 0, indicatorCache);
+    }
+    
+    glm::vec3 rgb() {
+        
+        QColor color = QColor::fromHsv(hue, saturation, value);
+        
+        float r = color.redF(); // 0-1
+        float g = color.greenF();
+        float b = color.blueF();
+        
+        return { r, g, b };
+
     }
     
 public slots:
@@ -237,9 +251,9 @@ public:
         //    colorLayout->addWidget(colorButton, 0, Qt::AlignTop | Qt::AlignLeft);
         //    colorWidget->setLayout(colorLayout);
         
-        HueIndicator* hueIndicator = new HueIndicator(this);
-        SVSquare* svSquare = new SVSquare(this);
-        HueSlider* hueSlider = new HueSlider(this);
+        hueIndicator = new HueIndicator(this);
+        svSquare = new SVSquare(this);
+        hueSlider = new HueSlider(this);
         
         connect(hueSlider, &HueSlider::hueChanged,
                 svSquare, &SVSquare::onHueChanged);
@@ -256,5 +270,15 @@ public:
         this->setLayout(colorLayout);
         
     }
+    
+public slots:
+    void onColor(std::function<void(glm::vec3)> reply) {
+        reply(hueIndicator->rgb());
+    }
+    
+private:
+    HueIndicator* hueIndicator;
+    SVSquare* svSquare;
+    HueSlider* hueSlider;
 
 };

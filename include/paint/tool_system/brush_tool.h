@@ -31,5 +31,7 @@ signals:
     void querySelectedLayer(std::function<void(int)> reply);
     void queryBrushSize(std::function<void(float)> reply);
     void queryBrushSpacing(std::function<void(float)> reply);
+    void queryBrushOpacity(std::function<void(float)> reply);
+    void queryBrushColor(std::function<void(glm::vec3)> reply);
     
 };

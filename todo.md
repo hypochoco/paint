@@ -8,17 +8,14 @@ Painting application:
 
 ---
 
+- [ ] canvas overhaul, after figuring out rendering pipelines ?
+
 - [ ] Bug: Brushes on different layers are not merging correctly
 - [ ] Bug: Brush / Layer engine, not drawing at edges
 - [ ] Bug: Sometimes, drawing between tiles gets clipped
     - [ ] Seen once on 2050x2050 canvas size
     - [ ] Seen pretty often now
     - [ ] Fix canvas sizing, make multiple quads for this 
-
-- [ ] figure out render pipeline and everything
-    - [ ] for opacity and colors
-    - [ ] what are all the fields in the shaders doing ??
-- [ ] canvas overhaul, after figuring out rendering pipelines ?
 
 --- 
 
@@ -73,6 +70,9 @@ Painting application:
 
 - [x] figure out some basic styling
 - [ ] complete styling
+
+- [x] Bug: Values are not being calculated correctly
+- [x] Figure out render pipeline for opacity and colors
     
 - [x] Rendering from top down on affected layers
 - [x] Layer deletion

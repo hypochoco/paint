@@ -15,6 +15,8 @@ bool BrushTool::leftButtonPressed(int x, int y) {
     int selectedLayer = -1;
     float brushSize = 0.05f;
     float brushSpacing = 0.01f;
+    float brushOpacity = 0.8f;
+    glm::vec3 brushColor = glm::vec3(0, 0, 0);
     
     emit querySelectedLayer([&selectedLayer](int sl) {
         selectedLayer = sl;
@@ -25,11 +27,18 @@ bool BrushTool::leftButtonPressed(int x, int y) {
     emit queryBrushSpacing([&brushSpacing](float bs) {
         brushSpacing = bs;
     });
-    
+    emit queryBrushOpacity([&brushOpacity](float bo) {
+        brushOpacity = bo;
+    });
+    emit queryBrushColor([&brushColor](glm::vec3 bc) {
+        brushColor = bc;
+    });
+        
     BrushStroke* action = new BrushStroke;
     action->data.selectedLayer = selectedLayer;
     action->data.brushSize = brushSize;
     action->data.brushSpacing = brushSpacing;
+    action->data.color = glm::vec4(brushColor, brushOpacity);
     action->record(x, y);
     actionBuffer->push(action);
     return true;

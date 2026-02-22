@@ -67,6 +67,28 @@ public:
         brushSpacingLayout->addWidget(brushSpacingSlider);
         brushSpacingLayout->addWidget(brushSpacingValueLabel);
         
+        // brush opacity
+        
+        QLabel *brushOpacityLabel = new QLabel("Brush opacity", this);
+        
+        QSlider* brushOpacitySlider = new QSlider(Qt::Horizontal, this);
+        brushOpacitySlider->setRange(0, 100);
+        brushOpacitySlider->setValue(80);
+        
+        connect(brushOpacitySlider, &QSlider::valueChanged,
+                this, &BrushesPanel::onBrushOpacitySliderValueChanged);
+        
+        QLabel *brushOpacityValueLabel = new QLabel("0.80", this);
+        
+        connect(brushOpacitySlider, &QSlider::valueChanged,
+                this, [brushOpacityValueLabel](int value) {
+            brushOpacityValueLabel->setText(QString::number(value / 100.0, 'f', 2));
+        });
+        
+        QHBoxLayout *brushOpacityLayout = new QHBoxLayout();
+        brushOpacityLayout->addWidget(brushOpacitySlider);
+        brushOpacityLayout->addWidget(brushOpacityValueLabel);
+        
         // layout
         
         QVBoxLayout *layout = new QVBoxLayout();
@@ -74,17 +96,21 @@ public:
         layout->addLayout(brushSizeLayout);
         layout->addWidget(brushSpacingLabel);
         layout->addLayout(brushSpacingLayout);
+        layout->addWidget(brushOpacityLabel);
+        layout->addLayout(brushOpacityLayout);
         this->setLayout(layout);
         
     }
     
 public slots:
     void onBrushSize(std::function<void(float)> reply) {
-        qDebug() << "MERP!";
         reply(brushSizeValue);
     }
     void onBrushSpacing(std::function<void(float)> reply) {
         reply(brushSpacingValue);
+    }
+    void onBrushOpacity(std::function<void(float)> reply) {
+        reply(brushOpacityValue);
     }
 
 private slots:
@@ -96,9 +122,14 @@ private slots:
         brushSpacingValue = value / 100.f;
         qDebug() << "[brushes panel] brush spacing slider value changed to:" << brushSpacingValue;
     }
+    void onBrushOpacitySliderValueChanged(int value) {
+        brushOpacityValue = value / 100.f;
+        qDebug() << "[brushes panel] brush opacity slider value changed to:" << brushOpacityValue;
+    }
     
 private:
     float brushSizeValue = 0.25f;
     float brushSpacingValue = 0.05f;
+    float brushOpacityValue = 0.8f;
     
 };

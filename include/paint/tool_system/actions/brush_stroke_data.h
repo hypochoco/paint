@@ -19,6 +19,7 @@ struct BrushStrokeData : public ActionData {
     
     float brushSize = 0.1f;
     float brushSpacing = 0.1f;
+    glm::vec4 color = glm::vec4(0, 0, 0, 0.8);
     
     std::vector<BrushPoint> brushPoints;
     

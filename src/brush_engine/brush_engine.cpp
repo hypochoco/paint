@@ -115,6 +115,7 @@ std::vector<BrushPoint> BrushEngine::interpolate(Camera& camera,
     
     const float& brushSize = brushStrokeData.brushSize;
     const float& spacing = brushStrokeData.brushSpacing;
+    const glm::vec4& brushColor = brushStrokeData.color;
 
     std::vector<BrushPoint> stamps;
     if (brushStrokeData.brushPoints.empty()) return stamps;
@@ -137,6 +138,7 @@ std::vector<BrushPoint> BrushEngine::interpolate(Camera& camera,
     }
     
     lastInput.size = glm::vec2(brushSize, brushSize);
+    lastInput.color = brushColor;
     
     if (brushStrokeData.nextIndex == 0) { // note: base case
         stamps.push_back(lastInput);
@@ -164,7 +166,8 @@ std::vector<BrushPoint> BrushEngine::interpolate(Camera& camera,
             traveled += step;
             stamps.push_back(BrushPoint{
                 lastInput.position + dir * traveled,
-                glm::vec2(brushSize, brushSize)
+                glm::vec2(brushSize, brushSize),
+                brushColor
             });
             carry = 0.0f;
         }
@@ -277,7 +280,7 @@ void BrushEngine::recordCommandBuffer(VkCommandBuffer& commandBuffer,
             StampPushConstant pc {
                 { brushPoint.position.x, brushPoint.position.y },
                 { brushPoint.size.x, brushPoint.size.y * canvasData.aspect },
-                { 1, 0, 1, 1 }
+                { brushPoint.color.r, brushPoint.color.g, brushPoint.color.b, brushPoint.color.a } // range 0-1
             };
 
             graphics->recordPushConstant(commandBuffer,

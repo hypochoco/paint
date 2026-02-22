@@ -74,10 +74,13 @@ public:
                 this, &Orchestrator::onQueryBrushSize);
         connect(toolSystem->brushTool, &BrushTool::queryBrushSpacing,
                 this, &Orchestrator::onQueryBrushSpacing);
+        connect(toolSystem->brushTool, &BrushTool::queryBrushOpacity,
+                this, &Orchestrator::onQueryBrushOpacity);
+        connect(toolSystem->brushTool, &BrushTool::queryBrushColor,
+                this, &Orchestrator::onQueryBrushColor);
         
         connect(toolSystem->zoomTool, &ZoomTool::updateCamera,
                 this, &Orchestrator::onUpdateCamera);
-        
     }
     void induct(MainWindow* mainWindow) {
         this->mainWindow = mainWindow;
@@ -99,6 +102,11 @@ public:
                 mainWindow->brushesPanel, &BrushesPanel::onBrushSize);
         connect(this, &Orchestrator::brushSpacing,
                 mainWindow->brushesPanel, &BrushesPanel::onBrushSpacing);
+        connect(this, &Orchestrator::brushOpacity,
+                mainWindow->brushesPanel, &BrushesPanel::onBrushOpacity);
+        
+        connect(this, &Orchestrator::brushColor,
+                mainWindow->colorsPanel, &ColorsPanel::onColor);
     }
         
 public slots:
@@ -146,6 +154,13 @@ public slots:
     void onQueryBrushSpacing(std::function<void(float)> reply) {
         emit brushSpacing(reply);
     }
+    void onQueryBrushOpacity(std::function<void(float)> reply) {
+        emit brushOpacity(reply);
+    }
+    void onQueryBrushColor(std::function<void(glm::vec3)> reply) {
+        emit brushColor(reply);
+    }
+
     void onSurfaceAboutToBeDestroyed() {
         // todo: handle multiple canvas windows
         graphics->deviceWaitIdle();
@@ -171,6 +186,8 @@ signals:
     void selectedLayer(std::function<void(int)> reply);
     void brushSize(std::function<void(float)> reply);
     void brushSpacing(std::function<void(float)> reply);
+    void brushOpacity(std::function<void(float)> reply);
+    void brushColor(std::function<void(glm::vec3)> reply);
     
 private:
     Graphics* graphics;
