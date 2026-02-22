@@ -45,7 +45,7 @@ public:
     
     void init() {
         if (initializeNew) {
-            createLayer(0, "Background", 255); // base white layer
+            createLayer(0, "Background", glm::ivec4(255, 255, 255, 255)); // base white layer
         }
     }
     
@@ -87,23 +87,24 @@ private:
     
     bool initializeNew = false;
     
-    std::string createLayer(int index, std::string name = "", int alpha = 0) {
+    std::string createLayer(int index,
+                            std::string name = "",
+                            glm::ivec4 color = glm::ivec4(0, 0, 0, 0)) {
         
         VkImage textureImage;
         VkDeviceMemory textureImageMemory;
         VkImageView textureImageView;
         
-        graphics->createTexture(textureImage,
+        graphics->createTexture(data->width,
+                                data->height,
+                                color,
+                                textureImage,
                                 textureImageMemory,
                                 textureImageView,
-                                data->width,
-                                data->height,
                                 VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT
                                 | VK_IMAGE_USAGE_TRANSFER_SRC_BIT
                                 | VK_IMAGE_USAGE_TRANSFER_DST_BIT
-                                | VK_IMAGE_USAGE_SAMPLED_BIT,
-                                1,
-                                alpha);
+                                | VK_IMAGE_USAGE_SAMPLED_BIT);
         
         Layer layer;
         if (name == "") {

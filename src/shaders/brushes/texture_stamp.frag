@@ -7,30 +7,20 @@
 
 #version 450
 
-//layout(binding = 0) uniform sampler2D brushTex;
-//
-//layout(location = 0) in vec2 outUV;
-//
-//layout(location = 0) out vec4 outColor;
-//
-//void main() {
-//    vec4 c = texture(brushTex, outUV);
-//    outColor = c;
-//}
+layout(push_constant) uniform BrushPC {
+    vec2 pos;   // world space coords (x, y)
+    vec2 size;  // brush size (width, height)
+    vec4 color; // rgba
+} pc;
 
 layout(binding = 0) uniform sampler2D brushTex;
 
-layout(location = 0) in vec4 inColor;
+layout(location = 0) in vec4 inColor; // empty value
 layout(location = 1) in vec2 inUV;
 
 layout(location = 0) out vec4 outColor;
 
 void main() {
-    float mask = texture(brushTex, inUV).r;
-    float a = inColor.a * mask;
-    outColor = vec4(inColor.rgb * a, a);
-
-    vec4 c = texture(brushTex, inUV);
-    outColor = c;
+    float mask = texture(brushTex, inUV).r; // uniform image format stored in r
+    outColor = vec4(pc.color.rgb, pc.color.a * mask);
 }
-

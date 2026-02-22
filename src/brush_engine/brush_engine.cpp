@@ -26,7 +26,7 @@ void BrushEngine::loadBrushes() {
                           VK_IMAGE_USAGE_TRANSFER_SRC_BIT
                           | VK_IMAGE_USAGE_TRANSFER_DST_BIT
                           | VK_IMAGE_USAGE_SAMPLED_BIT,
-                          1);
+                          VK_FORMAT_R8_UNORM);
     
     graphics->createDescriptorSet(imageView,
                                   stampDescriptorSet,
@@ -68,7 +68,7 @@ void BrushEngine::init() {
     VkPipelineShaderStageCreateInfo stampShaderStages[] = { stampVertShaderStageInfo, stampFragShaderStageInfo };
 
     VkPushConstantRange pushConstantRange{};
-    pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+    pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
     pushConstantRange.offset = 0;
     pushConstantRange.size = sizeof(StampPushConstant);
 
@@ -277,7 +277,7 @@ void BrushEngine::recordCommandBuffer(VkCommandBuffer& commandBuffer,
             StampPushConstant pc {
                 { brushPoint.position.x, brushPoint.position.y },
                 { brushPoint.size.x, brushPoint.size.y * canvasData.aspect },
-                { 0.f, 0.f, 0.f, 1.f }
+                { 1, 0, 1, 1 }
             };
 
             graphics->recordPushConstant(commandBuffer,
