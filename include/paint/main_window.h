@@ -9,10 +9,6 @@
 
 #include <QMainWindow>
 
-//#include <QResizeEvent>      // For resizeEvent()
-//#include <QMouseEvent>       // For mouse input
-//#include <QKeyEvent>         // For keyboard input
-
 #include <QMenuBar>          // Menu bar
 #include <QMenu>             // Individual menus
 #include <QToolBar>          // Toolbars
@@ -23,8 +19,9 @@
 //#include <QColorDialog>      // Color picker dialog
 //#include <QMessageBox>       // Alert/confirmation dialogs
 
-#include "paint/panels/layer_panel.h"
+#include "paint/panels/layers_panel.h"
 #include "paint/panels/brushes_panel.h"
+#include "paint/panels/colors_panel.h"
 
 class MainWindow : public QMainWindow {
     Q_OBJECT
@@ -32,6 +29,7 @@ class MainWindow : public QMainWindow {
 public:
     MainWindow();
     
+    ColorsPanel* colorsPanel;
     QDockWidget* colorsDock;
     
     LayersPanel* layersPanel;

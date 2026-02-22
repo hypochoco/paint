@@ -166,3 +166,31 @@ private:
     }
 
 };
+
+// notes on layer grouping
+
+//// Example of creating a group
+//QTreeWidgetItem *group = new QTreeWidgetItem(ui->treeWidget);
+//group->setText(0, "Background Group");
+//
+//// Adding a "layer" inside that group
+//QTreeWidgetItem *layer1 = new QTreeWidgetItem(group);
+//layer1->setText(0, "Layer 1");
+//
+//2. The Professional Way: QTreeView + QAbstractItemModel
+//If you are building a complex application (like a real image editor), you should use QTreeView paired with a custom Model.
+//Performance: Better for lists with thousands of layers.
+//Data Integrity: It separates how the data is stored from how it looks.
+//Drag and Drop: Implementing custom drag-and-drop behavior (to move layers into and out of groups) is much cleaner using the Model/View architecture.
+//
+//Key Features to Implement
+//To make it feel like Photoshop, you'll likely want to implement these specific features:
+//Feature     Qt Implementation
+//Visibility Toggle    Use item->setCheckState(0, Qt::Checked) or a custom QPushButton in the row.
+//Nesting    Set the ItemsExpandable property to true.
+//Rearranging    Enable setDragEnabled(true) and setAcceptDrops(true).
+//Custom Look    Use QStyledItemDelegate to draw custom sliders, opacity bars, or thumbnails next to the layer name.
+//
+//ui->treeWidget->setDragEnabled(true);
+//ui->treeWidget->setAcceptDrops(true);
+//ui->treeWidget->setDragDropMode(QAbstractItemView::InternalMove);

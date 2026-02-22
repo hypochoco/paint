@@ -57,18 +57,19 @@ public slots:
     void onExposed(bool isExposed) {
         exposed = isExposed;
     }
-    
     void onLayersDirty() {
         dirtyFlags.set(DirtyFlag::LAYER);
     }
-    
+    void onUpdateCamera(glm::vec3 delta) {
+        camera.position += delta;
+        dirtyFlags.set(DirtyFlag::CAMERA);
+    }
     void onActionsAvailable() {
         dirtyFlags.set(DirtyFlag::ACTIONS);
     }
     void onFrameReady(FrameGraph frameGraph) {
         submitFrame(frameGraph);
     }
-    
     void onCleanup() {
         cleanup();
     }

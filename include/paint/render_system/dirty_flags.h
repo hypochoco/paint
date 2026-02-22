@@ -27,6 +27,10 @@ public:
                 resized = true;
                 camera.assign(camera.size(), true);
                 break;
+            case DirtyFlag::CAMERA:
+                qDebug() << "[dirty flags] set resized flag";
+                camera.assign(camera.size(), true);
+                break;
             case DirtyFlag::ACTIONS:
                 // qDebug() << "[dirty flags] set actions flag";
                 actions = true;

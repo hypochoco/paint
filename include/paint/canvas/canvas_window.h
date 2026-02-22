@@ -54,6 +54,7 @@ signals:
     void leftButtonPressed(int x, int y);
     void leftButtonReleased(int x, int y);
     void mouseMoved(int x, int y);
+    void keyPressed(QKeyEvent* event);
         
 private:
     bool leftMouseDown = false;

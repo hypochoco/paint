@@ -276,7 +276,8 @@ void BrushEngine::recordCommandBuffer(VkCommandBuffer& commandBuffer,
             
             StampPushConstant pc {
                 { brushPoint.position.x, brushPoint.position.y },
-                { brushPoint.size.x, brushPoint.size.y * canvasData.aspect }
+                { brushPoint.size.x, brushPoint.size.y * canvasData.aspect },
+                { 0.f, 0.f, 0.f, 1.f }
             };
 
             graphics->recordPushConstant(commandBuffer,

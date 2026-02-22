@@ -6,16 +6,37 @@ Painting application:
 - [ ] Bug: Brushes on different layers are not merging correctly
 - [ ] Bug: Purple flicker
 - [ ] Bug: Brush / Layer engine, not drawing at edges
+- [ ] Bug: Sometimes, drawing between tiles gets clipped
+    - [ ] Seen once on 2050x2050 canvas size
+    - [ ] Seen pretty often now
+    - [ ] Fix canvas sizing, make multiple quads for this 
+- [ ] Bug: Culling distance on zoom
 
+---
+
+- [ ] figure out some basic styling
+- [ ] figure out render pipeline and everything
+    - [ ] for opacity and colors
+
+--- 
+
+- [ ] More brush features
+    - [ ] Colors
+    - [ ] Opacity
+- [ ] Color picker optimization 
 - [ ] Clean up the brush engine
     - [ ] Better way of handling canvas size / space, world space
 - [ ] Handle multiple canvas windows
+    - [ ] Dockable canvas widget 
 - [ ] Background gray color
+- [ ] Zoom tool
+    - [x] keyboard zoom in and out
+    - [ ] mouse zoom in and out
+- [ ] Tool selection indicator
 
-- [ ] Brush panel
-    - [x] Panel creation
-    - [ ] Panel functionality 
-        - [ ] brush size and spacing
+- [ ] Colors panel 
+    - [ ] Color selection
+    - [ ] Pass into brush stroke data 
 
 - [ ] Layers 
     - [x] Sync canvas and layer panel 
@@ -31,12 +52,19 @@ Painting application:
     - [ ] Layer renaming saved to canvas data structure
     - [ ] Crash on deleting the background layer 
         - [ ] Draw blank if there is no canvas   
+        
+    - [ ] Layer visibility 
 
 - [ ] Layer panel
     - [x] create frontend
     - [x] connect frontend functionality 
     - [ ] bottom to top 
-    - [ ] layer groups
+    - [ ] layer groups -> use a QTreeWidget instead of a list
+    
+- [x] Brush panel
+    - [x] Panel creation
+    - [x] Panel functionality 
+        - [x] brush size and spacing
     
 - [ ] Undo
     - [ ] image backups 
@@ -64,11 +92,9 @@ Painting application:
     - [ ] More interpolation methods 
     - [ ] Round brush
     - [ ] Brush opacity
-    - [ ] Brush settings UI
+    - [x] Brush settings UI
 
-- [ ] Layer visibility 
 - [ ] Canvas flipping
-- [ ] Zoom tool
     
 # Long term features
 

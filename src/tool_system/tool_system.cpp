@@ -10,13 +10,15 @@
 ToolSystem::ToolSystem() {
     actionBuffer = new ActionBuffer<ACTION_BUFFER_SIZE>;
     brushTool = new BrushTool { actionBuffer };
+    zoomTool = new ZoomTool { actionBuffer };
     
-    selectTool(brushTool);
+    selectTool(brushTool); // note: default tool
 }
 
 ToolSystem::~ToolSystem() {
     selectedTool = nullptr;
     delete brushTool;
+    delete zoomTool;
     delete actionBuffer;
 }
 
@@ -24,6 +26,25 @@ void ToolSystem::selectTool(Tool* tool) {
     if (selectedTool) selectedTool->onDeselect();
     selectedTool = tool;
     if (selectedTool) selectedTool->onSelect();
+}
+
+void ToolSystem::keyPressed(QKeyEvent* event) {
+    switch (event->key()) {
+        case Qt::Key_B:
+            qDebug() << "[tool system] selected brush tool";
+            selectTool(brushTool);
+            break;
+        case Qt::Key_Z:
+            qDebug() << "[tool system] selected zoom tool";
+            selectTool(zoomTool);
+            break;
+        default:
+            if (!selectedTool) break;
+            if (selectedTool->keyPressed(event)) {
+                emit actionsAvailable();
+            }
+            break;
+    }
 }
 
 void ToolSystem::leftButtonPressed(int x, int y) {

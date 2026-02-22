@@ -18,6 +18,13 @@
 #include <QWidget>
 
 MainWindow::MainWindow() {
+
+//    setWindowFlags(Qt::Window | Qt::FramelessWindowHint | Qt::WindowSystemMenuHint);
+//    setAttribute(Qt::WA_TranslucentBackground);
+    
+//    setWindowTitle("");           // no title text
+//    setWindowFlags(windowFlags() | Qt::FramelessWindowHint);
+    
     createDockPanels();
     createMenus();
     createToolbar();
@@ -66,23 +73,12 @@ void MainWindow::createToolbar() {
 void MainWindow::createDockPanels() {
     
     // colors panel
-    
-    QWidget* colorWidget = new QWidget(this);
-    QVBoxLayout* colorLayout = new QVBoxLayout(colorWidget);
-    QPushButton* colorButton = new QPushButton(colorWidget);
-    colorButton->setFixedSize(30, 30);
-    colorButton->setStyleSheet(
-        "QPushButton {"
-        "background-color: #3498db;"
-        "border-radius: 15px;"
-        "}"
-    );
-    colorLayout->addWidget(colorButton, 0, Qt::AlignTop | Qt::AlignLeft);
-    colorWidget->setLayout(colorLayout);
-    
+        
+    colorsPanel = new ColorsPanel(this);
     colorsDock = new QDockWidget("Colors", this);
-    colorsDock->setWidget(colorWidget);
-    colorsDock->setMinimumWidth(360);
+    colorsDock->setWidget(colorsPanel);
+    colorsDock->setMinimumWidth(100);
+//    colorsDock->setFeatures(colorsDock->features() & ~QDockWidget::DockWidgetClosable);
     addDockWidget(Qt::RightDockWidgetArea, colorsDock);
     
     // layer panel
@@ -90,7 +86,7 @@ void MainWindow::createDockPanels() {
     layersPanel = new LayersPanel(this);
     layersDock = new QDockWidget("Layers", this);
     layersDock->setWidget(layersPanel);
-    layersDock->setMinimumWidth(360);
+    layersDock->setMinimumWidth(100);
     addDockWidget(Qt::RightDockWidgetArea, layersDock);
     
     // brushes panel

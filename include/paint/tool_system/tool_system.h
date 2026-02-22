@@ -10,6 +10,8 @@
 #include <QObject>
 #include <QDebug>
 
+#include <QKeyEvent>
+
 #include "paint/tool_system/tool.h"
 #include "paint/tool_system/tool_system_config.h"
 #include "paint/tool_system/actions/action.h"
@@ -17,6 +19,7 @@
 #include "paint/tool_system/actions/action_buffer.h"
 
 #include "paint/tool_system/brush_tool.h"
+#include "paint/tool_system/zoom_tool.h"
 
 class ToolSystem : public QObject {
     Q_OBJECT
@@ -26,11 +29,13 @@ public:
     ~ToolSystem();
     
     BrushTool* brushTool;
+    ZoomTool* zoomTool;
     
 public slots:
     void leftButtonPressed(int x, int y);
     void leftButtonReleased(int x, int y);
     void mouseMoved(int x, int y);
+    void keyPressed(QKeyEvent* event);
     
     void onQueryActions(std::function<void(Action*)> reply);
     

@@ -10,6 +10,7 @@
 
 #include <QObject>
 #include <QThread>
+#include <QFile>
 
 #include <QApplication>
 #include <QVulkanInstance>
@@ -24,13 +25,22 @@
 #include "paint/canvas/canvas.h"
 #include "paint/panels/brushes_panel.h"
 
+#include "paint/utils.h"
+
 int main(int argc, char *argv[]) {
-    
-    // note: places menu at top of window
-    // QCoreApplication::setAttribute(Qt::AA_DontUseNativeMenuBar);
-    
-    QApplication app(argc, argv);
         
+    QApplication app(argc, argv);
+    
+    // load style sheet 
+    
+    QFile file(QString::fromStdString(resolveBundlePath("global.qss")));
+    
+    if (file.open(QFile::ReadOnly | QFile::Text)) { // todo: reenable / fix this
+//        app.setStyleSheet(QTextStream(&file).readAll());
+    } else {
+        qDebug() << "could not find file";
+    }
+
     // vulkan instance
     
     QVulkanInstance* inst = new QVulkanInstance;
@@ -67,6 +77,7 @@ int main(int argc, char *argv[]) {
     
     Canvas* canvas = new Canvas(graphics);
     canvas->create(1024, 2050); // init canvas size
+    canvas->create(2050, 2050);
     
     // windows
     

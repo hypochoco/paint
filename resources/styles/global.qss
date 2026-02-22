@@ -1,0 +1,31 @@
+/*
+//  Header.h
+//  main
+//
+//  Created by Daniel Cho on 2/20/26.
+*/
+
+QMainWindow {
+    background-color: #42c433;
+}
+
+QMainWindow::separator {
+    background: #00f;
+    width: 10px;
+    height: 10px;
+}
+
+QDockWidget {
+    background-color: #c44633;
+}
+
+QDockWidget::title {
+    border: none;
+}
+
+QDockWidget::close-button, QDockWidget::float-button {
+    max-width: 0px;
+    max-height: 0px;
+    padding: 0px;
+    margin: 0px;
+}

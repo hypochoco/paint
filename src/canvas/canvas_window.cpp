@@ -75,10 +75,6 @@ void CanvasWindow::mouseMoveEvent(QMouseEvent *event) {
 }
 
 void CanvasWindow::keyPressEvent(QKeyEvent *event) {
-    if (event->key() == Qt::Key_Q) {
-        qDebug() << "[canvas window] q key was pressed";
-        event->accept();
-    } else {
-        QWindow::keyPressEvent(event);
-    }
+    QWindow::keyPressEvent(event);
+    emit keyPressed(event);
 }

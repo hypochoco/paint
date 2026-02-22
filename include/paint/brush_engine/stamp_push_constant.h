@@ -10,4 +10,5 @@
 struct StampPushConstant {
     float pos[2];
     float size[2];
+    float color[4];    
 };

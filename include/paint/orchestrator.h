@@ -45,6 +45,9 @@ public:
                 this, &Orchestrator::onSurfaceCreated);
         connect(canvasWindow, &CanvasWindow::surfaceAboutToBeDestroyed,
                 this, &Orchestrator::onSurfaceAboutToBeDestroyed);
+        
+        connect(canvasWindow, &CanvasWindow::keyPressed,
+                this, &Orchestrator::onKeyPressed);
     }
     void induct(RenderSystem* renderSystem) {
         this->renderSystem = renderSystem;
@@ -56,16 +59,25 @@ public:
                 this, &Orchestrator::onReady);
         connect(this, &Orchestrator::layersDirty,
                 renderSystem, &RenderSystem::onLayersDirty);
+        connect(this, &Orchestrator::updateCamera,
+                renderSystem, &RenderSystem::onUpdateCamera);
         connect(this, &Orchestrator::cleanup,
                 renderSystem, &RenderSystem::onCleanup);
     }
     void induct(ToolSystem* toolSystem) {
+        connect(this, &Orchestrator::keyPressed,
+                toolSystem, &ToolSystem::keyPressed);
+        
         connect(toolSystem->brushTool, &BrushTool::querySelectedLayer,
                 this, &Orchestrator::onQuerySelectedLayer);
         connect(toolSystem->brushTool, &BrushTool::queryBrushSize,
                 this, &Orchestrator::onQueryBrushSize);
         connect(toolSystem->brushTool, &BrushTool::queryBrushSpacing,
                 this, &Orchestrator::onQueryBrushSpacing);
+        
+        connect(toolSystem->zoomTool, &ZoomTool::updateCamera,
+                this, &Orchestrator::onUpdateCamera);
+        
     }
     void induct(MainWindow* mainWindow) {
         this->mainWindow = mainWindow;
@@ -100,6 +112,7 @@ public slots:
             mainWindow->layersPanel->sync();
         }
     }
+    
     void onSync(std::function<void(std::string)> reply) {
         emit sync(reply);
     }
@@ -115,6 +128,15 @@ public slots:
     void onLayersDirty() {
         emit layersDirty();
     }
+    
+    void onKeyPressed(QKeyEvent* event) {
+        emit keyPressed(event);
+    }
+    
+    void onUpdateCamera(glm::vec3 delta) {
+        emit updateCamera(delta);
+    }
+    
     void onQuerySelectedLayer(std::function<void(int)> reply) {
         emit selectedLayer(reply);
     }
@@ -140,6 +162,10 @@ signals:
     void addLayer(int index, std::function<void(std::string)> reply);
     void removeLayer(int index);
     void rowsMoved(int from, int to);
+    
+    void keyPressed(QKeyEvent* event);
+    
+    void updateCamera(glm::vec3 delta);
     
     void layersDirty();
     void selectedLayer(std::function<void(int)> reply);
