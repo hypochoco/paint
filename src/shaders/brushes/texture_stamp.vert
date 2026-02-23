@@ -23,7 +23,7 @@ layout(location = 1) out vec2 outUV;
 // note: brush quad -> canvas quad
 
 void main() {
-    gl_Position = vec4(inPosition.xy * pc.size + pc.pos, 0.0, 1.0);
+    gl_Position = vec4(inPosition.xy * pc.size * 0.5f + pc.pos, 0.0, 1.0);
     outColor = inColor;
     outUV = inTexCoord;
 }

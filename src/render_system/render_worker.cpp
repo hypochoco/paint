@@ -13,10 +13,10 @@ void RenderWorker::buildBrushStrokeNode(FrameGraph& frameGraph, BrushStrokeData&
         
     // note: without caching 0-3 ms, with caching 0 ms
     
-    brushEngine->setCanvasData(frameGraph.canvasData);
-    
     // todo: throw an error if selected layer is not visible
     // todo: optimize by grouping everything under the same layer if all drawn
+
+    brushEngine->setCanvasData(frameGraph.canvasData);
     
     Layer& selectedLayer = frameGraph.canvasData.layers[brushStrokeData.selectedLayer];
     if (frameBufferMap.find(selectedLayer.id) == frameBufferMap.end()) {
@@ -34,22 +34,20 @@ void RenderWorker::buildBrushStrokeNode(FrameGraph& frameGraph, BrushStrokeData&
     
     if (brushPoints.size() == 0) return;
     
-    auto tileMap = brushEngine->calculateTile(brushPoints);
+    auto tileMap = brushEngine->calculateTiles(brushPoints);
+    BrushStrokeNode* brushStrokeNode = new BrushStrokeNode { tileMap };
     
-    std::vector<glm::ivec2> tiles;
-    std::unordered_map<glm::ivec2, std::vector<BrushPoint>> canvasMap;
-    
+    std::vector<glm::ivec4> tiles;
     for (auto& it : tileMap) {
-        
-        glm::ivec2 start = brushEngine->tileToCanvas(it.first);
-        tiles.push_back(start);
-        canvasMap[start] = it.second;
-        
+        glm::ivec4 tile;
+        if (brushEngine->tileToCanvas(it.first, tile)) {
+            tiles.push_back(tile);
+        }
     }
-    
-    BrushStrokeNode* brushStrokeNode = new BrushStrokeNode { canvasMap };
-    
+            
     LayerNode* layerNode = new LayerNode { tiles };
+//    LayerNode* layerNode = new LayerNode; // temp: turn off layer engine tiling
+        // note: solves purple flicker issue
     layerNode->children.push_back(brushStrokeNode);
 
     frameGraph.root->children.push_back(layerNode);
@@ -69,6 +67,7 @@ void RenderWorker::processCameraNode(FrameGraph& frameGraph) {
 void RenderWorker::processBrushStrokeNode(FrameGraph& frameGraph, BrushStrokeNode& brushStrokeNode) {
     
     brushEngine->recordCommandBuffer(graphics->commandBuffers[frameGraph.currentFrame],
+                                     frameGraph.windowSize,
                                      brushStrokeNode.canvasMap);
         
 }

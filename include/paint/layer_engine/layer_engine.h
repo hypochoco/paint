@@ -25,7 +25,7 @@ public:
     void recordCommandBuffer(VkCommandBuffer& commandBuffer,
                              std::vector<VkDescriptorSet>& descriptorSets);
     void recordCommandBuffer(VkCommandBuffer& commandBuffer,
-                             std::vector<glm::ivec2>& tiles,
+                             std::vector<glm::ivec4>& tiles,
                              std::vector<VkDescriptorSet>& descriptorSets);
     void cleanup();
         

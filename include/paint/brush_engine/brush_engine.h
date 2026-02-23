@@ -29,9 +29,13 @@ public:
                                         BrushStrokeData& brushStrokeData,
                                         BrushStrokeDataCache& brushStrokeDataCache);
     std::unordered_map<glm::ivec2, std::vector<BrushPoint>>
-    calculateTile(std::vector<BrushPoint>& brushPoints);
-    glm::ivec2 tileToCanvas(glm::ivec2 tile);
+    calculateTiles(std::vector<BrushPoint>& brushPoints);
+    int tileEdgeX(int tileIndex) const;
+    int tileEdgeY(int tileIndex) const;
+    bool tileToCanvas(const glm::ivec2& tileIndex,
+                      glm::ivec4& outRect) const;
     void recordCommandBuffer(VkCommandBuffer& commandBuffer,
+                             glm::vec2& windowSize,
                              std::unordered_map<glm::ivec2, std::vector<BrushPoint>>& canvasMap);
     void cleanup();
         

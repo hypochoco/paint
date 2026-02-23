@@ -3,30 +3,43 @@
 
 Painting application:
 
-- [ ] Bug: Purple flicker
+- [ ] Bug: Purple flicker ?
 - [ ] Bug: Culling distance on zoom
+
+```
+Purple/magenta flicker is a classic sign of an uninitialized or cleared render target. A few common causes:
+Clear color — check your render pass clear values. If you have a clear color set to something like {1, 0, 1, 1} (magenta) for debugging purposes that's your culprit. It's a common convention to use magenta as a "this shouldn't be visible" clear color.
+Pipeline barrier / layout transition timing — on MoltenVK specifically, image layout transitions can sometimes expose a frame where the image is in an unexpected state, briefly showing whatever was in memory.
+Swapchain image not being written — if a frame slips through where your render pass clears but doesn't complete drawing, you'd see the clear color for one frame.
+Descriptor set pointing to wrong image — if a descriptor is updated while in use, you might briefly sample garbage.
+I'd start by checking your clear color values first — magenta specifically is almost always an intentional debug clear color that someone set and forgot about.there are no magenta in colors in my code at least. it may be in the vulkan code itself or something3:56 AMOn MoltenVK, a common cause is that an image is being sampled before its layout transition is complete — MoltenVK translates Vulkan barriers to Metal and the timing can be slightly different than on native Vulkan drivers, sometimes exposing race conditions that would be hidden on desktop GPUs.
+A few things to check:
+Pipeline barriers — make sure every image has a proper layout transition before it's sampled. Missing or incorrect srcStageMask/dstStageMask flags are a common culprit.
+Render pass loadOp — if any attachment has VK_ATTACHMENT_LOAD_OP_DONT_CARE and the image wasn't written last frame, you'll get undefined contents which on MoltenVK can show up as colored garbage.
+Semaphore/fence synchronization — if you're submitting work without properly waiting on the previous frame, you might be rendering to an image that's still being presented.
+MoltenVK validation — try enabling the Metal validation layer in Xcode by going to Edit Scheme → Run → Diagnostics → Metal → Enable API Validation. This can catch synchronization issues that Vulkan validation misses on MoltenVK.
+The fact that it's only a flicker suggests it's a synchronization issue rather than a consistent bug — something is occasionally racing. The Metal API validation layer is probably your best next step since it operates at a lower level than Vulkan validation on Mac.
+```
 
 ---
 
-- [ ] canvas overhaul, after figuring out rendering pipelines ?
+- [x] Clean up the brush engine
+- [x] Bug: Brush / Layer engine, not drawing at edges
+- [x] Bug: Sometimes, drawing between tiles gets clipped
 
 - [ ] Bug: Brushes on different layers are not merging correctly
-- [ ] Bug: Brush / Layer engine, not drawing at edges
-- [ ] Bug: Sometimes, drawing between tiles gets clipped
-    - [ ] Seen once on 2050x2050 canvas size
-    - [ ] Seen pretty often now
-    - [ ] Fix canvas sizing, make multiple quads for this 
+- [ ] Is color selection off ? could we draw the sv square a little darker ?
+- [ ] Bug: Purple flicker is more prominent after tiled layer engine 
 
 --- 
 
-- [ ] More brush features
-    - [ ] Colors
-    - [ ] Opacity
+- [x] More brush features
+    - [x] Colors
+    - [x] Opacity
 - [ ] Color picker optimization 
-- [ ] Clean up the brush engine
-    - [ ] Better way of handling canvas size / space, world space
 - [ ] Handle multiple canvas windows
     - [ ] Dockable canvas widget 
+    - [ ] Overhaul of widget structure and general styling
 - [ ] Background gray color
 - [ ] Zoom tool
     - [x] keyboard zoom in and out

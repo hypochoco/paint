@@ -40,15 +40,11 @@ public:
     }
     
     glm::vec3 rgb() {
-        
         QColor color = QColor::fromHsv(hue, saturation, value);
-        
         float r = color.redF(); // 0-1
         float g = color.greenF();
         float b = color.blueF();
-        
         return { r, g, b };
-
     }
     
 public slots:

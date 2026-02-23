@@ -118,7 +118,7 @@ void LayerEngine::recordCommandBuffer(VkCommandBuffer& commandBuffer,
 }
 
 void LayerEngine::recordCommandBuffer(VkCommandBuffer& commandBuffer,
-                                      std::vector<glm::ivec2>& tiles,
+                                      std::vector<glm::ivec4>& tiles,
                                       std::vector<VkDescriptorSet>& descriptorSets) {
         
     graphics->recordBeginRenderPass(commandBuffer,
@@ -134,25 +134,34 @@ void LayerEngine::recordCommandBuffer(VkCommandBuffer& commandBuffer,
                                 canvasWidth,
                                 canvasHeight);
     
-    for (glm::ivec2 tile : tiles) {
+    for (glm::ivec4 tile : tiles) { // clear dirty tiles
         
-        // todo: edge cases aren't right, not drawing at very bottom
-            // canvas size: 1024, 2050
-        
-        if ((canvasWidth - tile.x) <= 0 || (canvasHeight - tile.y) <= 0) continue;
+        // note: separate to portect against overlap flickers
         
         graphics->recordSetScissor(commandBuffer,
                                    tile.x,
                                    tile.y,
-                                   CanvasData::TILE_WIDTH,
-                                   CanvasData::TILE_HEIGHT);
+                                   tile.z,
+                                   tile.w);
         
-        graphics->recordClearAttachment(commandBuffer, // clear canvas
+        graphics->recordClearAttachment(commandBuffer,
                                         tile.x,
                                         tile.y,
-                                        std::min(CanvasData::TILE_WIDTH, canvasWidth - tile.x),
-                                        std::min(CanvasData::TILE_HEIGHT, canvasHeight - tile.y));
+                                        tile.z,
+                                        tile.w);
 
+    }
+    
+    for (glm::ivec4 tile : tiles) {
+        
+        // todo: draw by layer then tile ?
+                                                
+        graphics->recordSetScissor(commandBuffer,
+                                   tile.x,
+                                   tile.y,
+                                   tile.z,
+                                   tile.w);
+    
         for (VkDescriptorSet& descriptorSet : descriptorSets) {
             
             graphics->recordBindDescriptorSet(commandBuffer,
@@ -168,7 +177,6 @@ void LayerEngine::recordCommandBuffer(VkCommandBuffer& commandBuffer,
     graphics->recordEndRenderPass(commandBuffer);
 
 }
-
 
 void LayerEngine::cleanup() {
     

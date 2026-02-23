@@ -45,6 +45,8 @@ void RenderSystem::init() {
     if (initialized) return;
     
     qDebug() << "[render system] init";
+    
+    // todo: cleanup initialization order
 
     graphics->pickPhysicalDevice();
     graphics->createLogicalDevice();
