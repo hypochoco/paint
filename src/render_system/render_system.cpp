@@ -143,6 +143,8 @@ void RenderSystem::update() {
 
 void RenderSystem::startFrame() {
     
+    if (debugFence) return;
+    
     if (dirtyFlags.dirty(DirtyFlag::RESIZED)) {
         graphics->recreateSwapChain();
     }
@@ -184,6 +186,8 @@ void RenderSystem::startFrame() {
     
     graphics->advanceFrame();
     
+    debugFence = true;
+    
 }
 
 void RenderSystem::submitFrame(FrameGraph frameGraph) {
@@ -196,6 +200,8 @@ void RenderSystem::submitFrame(FrameGraph frameGraph) {
         dirtyFlags.set(DirtyFlag::RESIZED);
     }
     emit requestUpdate(); // note: request update from window
+    
+    debugFence = false;
     
 }
 

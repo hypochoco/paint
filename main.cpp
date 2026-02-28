@@ -76,8 +76,8 @@ int main(int argc, char *argv[]) {
     // canvas
     
     Canvas* canvas = new Canvas(graphics);
-    canvas->create(1024, 2050); // init canvas size
-    canvas->create(2050, 2050);
+//    canvas->create(1024, 2050); // init canvas size
+    canvas->create(2165, 2165);
     
     // windows
     

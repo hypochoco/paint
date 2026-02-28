@@ -97,6 +97,8 @@ private:
     bool initialized;
     bool canvasInitialized;
     
+    bool debugFence;
+    
     int windowWidth, windowHeight;
     
     CanvasData* canvasData;

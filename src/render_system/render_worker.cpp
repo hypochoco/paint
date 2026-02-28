@@ -9,6 +9,8 @@
 
 #include <chrono>
 
+#include "paint/render_system/tile.h"
+
 void RenderWorker::buildBrushStrokeNode(FrameGraph& frameGraph, BrushStrokeData& brushStrokeData) {
         
     // note: without caching 0-3 ms, with caching 0 ms
@@ -16,15 +18,46 @@ void RenderWorker::buildBrushStrokeNode(FrameGraph& frameGraph, BrushStrokeData&
     // todo: throw an error if selected layer is not visible
     // todo: optimize by grouping everything under the same layer if all drawn
 
-    brushEngine->setCanvasData(frameGraph.canvasData);
+//    brushEngine->setCanvasData(frameGraph.canvasData);
+//    
+//    Layer& selectedLayer = frameGraph.canvasData.layers[brushStrokeData.selectedLayer];
+//    if (frameBufferMap.find(selectedLayer.id) == frameBufferMap.end()) {
+//        VkFramebuffer frameBuffer;
+//        brushEngine->createFrameBuffer(selectedLayer.imageView, frameBuffer);
+//        frameBufferMap[selectedLayer.id] = frameBuffer;
+//    }
+//    brushEngine->setTarget(frameBufferMap[selectedLayer.id]);
+//    
+//    std::vector<BrushPoint> brushPoints =
+//        brushEngine->interpolate(frameGraph.camera,
+//                                 frameGraph.windowSize,
+//                                 brushStrokeData,
+//                                 actionDataCache->getBrushStrokeDataCache(brushStrokeData.id));
+//    
+//    if (brushPoints.size() == 0) return;
+//    
+//    // ---
+//    
+//    // debugging
+//    
+//    std::vector<Tile> tiles;
+//    brushEngine->calculateTiles(brushPoints, tiles);
+//    BrushStrokeNode* brushStrokeNode = new BrushStrokeNode { tiles };
+//    
+////    LayerNode* layerNode = new LayerNode { tiles };
+//    LayerNode* layerNode = new LayerNode;
+//    
+//    layerNode->children.push_back(brushStrokeNode);
+//    frameGraph.root->children.push_back(layerNode);
     
-    Layer& selectedLayer = frameGraph.canvasData.layers[brushStrokeData.selectedLayer];
-    if (frameBufferMap.find(selectedLayer.id) == frameBufferMap.end()) {
-        VkFramebuffer frameBuffer;
-        brushEngine->createFrameBuffer(selectedLayer.imageView, frameBuffer);
-        frameBufferMap[selectedLayer.id] = frameBuffer;
-    }
-    brushEngine->setTarget(frameBufferMap[selectedLayer.id]);
+    // ---
+    
+    // full debugging
+    
+    // note: no layer engine, get tiling in the brush engine right
+
+    brushEngine->setCanvasData(frameGraph.canvasData);
+    brushEngine->setTarget(layerEngine->layerFrameBuffer);
     
     std::vector<BrushPoint> brushPoints =
         brushEngine->interpolate(frameGraph.camera,
@@ -34,23 +67,13 @@ void RenderWorker::buildBrushStrokeNode(FrameGraph& frameGraph, BrushStrokeData&
     
     if (brushPoints.size() == 0) return;
     
-    auto tileMap = brushEngine->calculateTiles(brushPoints);
-    BrushStrokeNode* brushStrokeNode = new BrushStrokeNode { tileMap };
+    std::vector<Tile> tiles;
+    brushEngine->calculateTiles(brushPoints, tiles);
+    BrushStrokeNode* brushStrokeNode = new BrushStrokeNode { tiles };
     
-    std::vector<glm::ivec4> tiles;
-    for (auto& it : tileMap) {
-        glm::ivec4 tile;
-        if (brushEngine->tileToCanvas(it.first, tile)) {
-            tiles.push_back(tile);
-        }
-    }
-            
-    LayerNode* layerNode = new LayerNode { tiles };
-//    LayerNode* layerNode = new LayerNode; // temp: turn off layer engine tiling
-        // note: solves purple flicker issue
-    layerNode->children.push_back(brushStrokeNode);
+    frameGraph.root->children.push_back(brushStrokeNode);
 
-    frameGraph.root->children.push_back(layerNode);
+    // ---
     
 }
 
@@ -66,9 +89,11 @@ void RenderWorker::processCameraNode(FrameGraph& frameGraph) {
 
 void RenderWorker::processBrushStrokeNode(FrameGraph& frameGraph, BrushStrokeNode& brushStrokeNode) {
     
+    qDebug() << "[render worker] processing brush stroke node";
+    
     brushEngine->recordCommandBuffer(graphics->commandBuffers[frameGraph.currentFrame],
                                      frameGraph.windowSize,
-                                     brushStrokeNode.canvasMap);
+                                     brushStrokeNode.tiles);
         
 }
 

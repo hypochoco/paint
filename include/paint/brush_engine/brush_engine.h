@@ -14,6 +14,7 @@
 #include "paint/render_system/cache/brush_stroke_data_cache.h"
 #include "paint/tool_system/actions/brush_point.h"
 #include "paint/canvas/canvas_data.h"
+#include "paint/render_system/tile.h"
 
 class BrushEngine {
     
@@ -28,15 +29,11 @@ public:
                                         glm::vec2& windowSize,
                                         BrushStrokeData& brushStrokeData,
                                         BrushStrokeDataCache& brushStrokeDataCache);
-    std::unordered_map<glm::ivec2, std::vector<BrushPoint>>
-    calculateTiles(std::vector<BrushPoint>& brushPoints);
-    int tileEdgeX(int tileIndex) const;
-    int tileEdgeY(int tileIndex) const;
-    bool tileToCanvas(const glm::ivec2& tileIndex,
-                      glm::ivec4& outRect) const;
+    void calculateTiles(std::vector<BrushPoint>& brushPoints,
+                        std::vector<Tile>& tiles);
     void recordCommandBuffer(VkCommandBuffer& commandBuffer,
                              glm::vec2& windowSize,
-                             std::unordered_map<glm::ivec2, std::vector<BrushPoint>>& canvasMap);
+                             std::vector<Tile>& tiles);
     void cleanup();
         
 private:
@@ -51,6 +48,9 @@ private:
     VkDescriptorSet stampDescriptorSet;
     VkPipeline stampPipeline;
     VkPipelineLayout stampPipelineLayout;
+    
+    VkPipeline debugPipeline;
+    VkPipelineLayout debugPipelineLayout;
     
     std::vector<VkImage> images;
     std::vector<VkImageView> imageViews;

@@ -82,6 +82,45 @@ void BrushEngine::init() {
     graphics->destroyShaderModule(stampVertShaderModule);
     graphics->destroyShaderModule(stampFragShaderModule);
     
+    // ---
+    
+    // debugging
+    
+    auto debugVertShaderCode = Graphics::readFile(resolveBundlePath("debug_vert.spv"));
+    auto debugFragShaderCode = Graphics::readFile(resolveBundlePath("debug_frag.spv"));
+
+    VkShaderModule debugVertShaderModule = graphics->createShaderModule(debugVertShaderCode);
+    VkShaderModule debugFragShaderModule = graphics->createShaderModule(debugFragShaderCode);
+
+    VkPipelineShaderStageCreateInfo debugVertShaderStageInfo{};
+    debugVertShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+    debugVertShaderStageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
+    debugVertShaderStageInfo.module = debugVertShaderModule;
+    debugVertShaderStageInfo.pName = "main";
+
+    VkPipelineShaderStageCreateInfo debugFragShaderStageInfo{};
+    debugFragShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+    debugFragShaderStageInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+    debugFragShaderStageInfo.module = debugFragShaderModule;
+    debugFragShaderStageInfo.pName = "main";
+
+    VkPipelineShaderStageCreateInfo debugShaderStages[] = {
+        debugVertShaderStageInfo,
+        debugFragShaderStageInfo
+    };
+
+    graphics->createPipeline(debugPipeline,
+                             stampDescriptorSetLayout,
+                             debugPipelineLayout,
+                             stampRenderPass,
+                             debugShaderStages,
+                             pushConstantRange);
+
+    graphics->destroyShaderModule(debugVertShaderModule);
+    graphics->destroyShaderModule(debugFragShaderModule);
+    
+    // ---
+    
     loadBrushes();
     
 }
@@ -121,7 +160,7 @@ std::vector<BrushPoint> BrushEngine::interpolate(Camera& camera,
 
     std::vector<BrushPoint> stamps;
     if (brushStrokeData.brushPoints.empty()) return stamps;
-
+    
     float carry;
     BrushPoint lastInput;
     
@@ -185,135 +224,161 @@ std::vector<BrushPoint> BrushEngine::interpolate(Camera& camera,
     return stamps;
 }
 
-std::unordered_map<glm::ivec2, std::vector<BrushPoint>>
-BrushEngine::calculateTiles(std::vector<BrushPoint>& brushPoints) {
+// ---
 
-    if (brushPoints.empty()) return {};
+// debugging
+
+void BrushEngine::calculateTiles(std::vector<BrushPoint>& brushPoints,
+                                 std::vector<Tile>& tiles) {
+
+    if (brushPoints.empty()) return;
+                
+    // pixels allocated left, right, top bottom
     
-    // todo: cache these values
-
-    const float aspect = (float) canvasData.height / (float) canvasData.width;
-    const float tileWorldW = 2.0f / (canvasData.width  / (float) CanvasData::TILE_WIDTH);
-    const float tileWorldH = 2.0f * aspect / (canvasData.height / (float) CanvasData::TILE_HEIGHT);
-
-    auto worldToTile = [&](glm::vec2 pos) -> glm::ivec2 {
-        return glm::ivec2(
-            glm::floor(pos.x / tileWorldW),
-            glm::floor(pos.y / tileWorldH)
-        );
-    };
-
-    const glm::ivec2 tileMin = worldToTile(glm::vec2(-1.0f, -aspect));
-    const glm::ivec2 tileMax = worldToTile(glm::vec2( 1.0f,  aspect));
-    const glm::ivec2 clampedMax = tileMax - glm::ivec2(1, 1);
-
-    std::unordered_map<glm::ivec2, std::vector<BrushPoint>> tileMap;
+    int left = std::floor(canvasData.width / 2);
+    int right = std::ceil(canvasData.width / 2);
+    int top = std::floor(canvasData.height / 2);
+    int bottom = std::ceil(canvasData.height / 2);
+    
+    // num tiles allocated left, right, top, bottom
+    
+    int maxLeft = std::ceil(left / (float) CanvasData::TILE_WIDTH);
+    int maxRight = std::ceil(right / (float) CanvasData::TILE_WIDTH);
+    int maxTop = std::ceil(top / (float) CanvasData::TILE_HEIGHT);
+    int maxBottom = std::ceil(bottom / (float) CanvasData::TILE_HEIGHT);
+    
+    // middle pixel in world space
+    
+    glm::vec2 middle(2.f * (right / (float) canvasData.width) - 1.f,
+                     2.f * (bottom / (float) canvasData.height) - 1.f);
         
+    // size of tile in world space
+    
+    glm::vec2 tileSize(2.f * CanvasData::TILE_WIDTH / (float) canvasData.width,
+                       2.f * CanvasData::TILE_HEIGHT / (float) canvasData.height);
+    
+    // tile map for output
+    
+    std::unordered_map<glm::ivec2, Tile> tileMap;
+    
     for (BrushPoint& brushPoint : brushPoints) {
-        const glm::vec2 halfSize(brushPoint.size * 0.5f);
-        const glm::vec2 bottomLeft = brushPoint.position - halfSize;
-        const glm::vec2 topRight = brushPoint.position + halfSize;
         
-        glm::ivec2 tileBL = worldToTile(bottomLeft);
-        glm::ivec2 tileTR = worldToTile(topRight);
+        glm::ivec2 tileIndexBottomLeft = glm::floor((brushPoint.position - brushPoint.size / 2.f - middle) / tileSize);
+        glm::ivec2 tileIndexTopRight = glm::floor((brushPoint.position + brushPoint.size / 2.f - middle) / tileSize);
+        
+        for (int i = tileIndexBottomLeft.x; i <= tileIndexTopRight.x; i++) {
+            for (int j = tileIndexBottomLeft.y; j <= tileIndexTopRight.y; j++) {
+                
+                glm::ivec2 tileIndex(i, j);
+                
+                if (tileMap.find(tileIndex) != tileMap.end()) {
+                    tileMap[tileIndex].brushPoints.push_back(brushPoint);
+                } else {
+                    
+                    glm::ivec4 dimensions;
+                    dimensions.x = right + tileIndex.x * CanvasData::TILE_WIDTH;
+                    dimensions.y = bottom + tileIndex.y * CanvasData::TILE_HEIGHT;
+                    dimensions.z = CanvasData::TILE_WIDTH;
+                    dimensions.w = CanvasData::TILE_HEIGHT;
+                    
+                    if (dimensions.x > canvasData.width) continue;
+                    if (dimensions.y > canvasData.height) continue;
+                    
+                    if (dimensions.x < 0) {
+                        int adjustmentValue = dimensions.x;
+                        dimensions.x -= adjustmentValue;
+                        dimensions.z += adjustmentValue;
+                    } else if (dimensions.x + dimensions.z > canvasData.width) {
+                        int adjustmentValue = canvasData.width - dimensions.x;
+                        dimensions.z = adjustmentValue;
+                    }
+                    
+                    if (dimensions.y < 0) {
+                        int adjustmentValue = dimensions.y;
+                        dimensions.y -= adjustmentValue;
+                        dimensions.w += adjustmentValue;
+                    } else if (dimensions.y + dimensions.w > canvasData.height) {
+                        int adjustmentValue = canvasData.height - dimensions.y;
+                        dimensions.w = adjustmentValue;
+                    }
+                    
+                    Tile tile;
+                    tile.dimensions = dimensions;
+                    tile.debugColor = glm::vec4(
+                        (maxLeft + tileIndex.x) / (float) (maxLeft + maxRight),
+                        (maxBottom + tileIndex.y) / (float) (maxBottom + maxTop),
+                        0,
+                        0.15f
+                    );
+                    tile.brushPoints.push_back(brushPoint);
+                    
+                    tileMap[tileIndex] = tile;
 
-        tileBL = glm::clamp(tileBL, tileMin, clampedMax);
-        tileTR = glm::clamp(tileTR, tileMin, clampedMax);
-        
-        for (int i = tileBL.x; i <= tileTR.x; i++) {
-            for (int j = tileBL.y; j <= tileTR.y; j++) {
-                tileMap[glm::ivec2(i, j)].push_back(brushPoint);
+                }
             }
         }
     }
-
-    return tileMap;
+    
+    for (auto& it : tileMap) {
+        tiles.push_back(it.second);
+    }
+    
 }
-
-int BrushEngine::tileEdgeX(int tileIndex) const {
-    const float tileWorldW = 2.0f / (canvasData.width / (float)CanvasData::TILE_WIDTH);
-    float world = tileIndex * tileWorldW;
-    float clamped = std::clamp(world, -1.0f, 1.0f);
-    float pixel = (clamped + 1.0f) / 2.0f * (float)canvasData.width;
-    return std::clamp((int)std::round(pixel), 0, canvasData.width);
-}
-
-int BrushEngine::tileEdgeY(int tileIndex) const {
-    const float aspect = (float)canvasData.height / (float)canvasData.width;
-    const float tileWorldH = 2.0f * aspect / (canvasData.height / (float)CanvasData::TILE_HEIGHT);
-    float world = tileIndex * tileWorldH;
-    float clamped = std::clamp(world, -aspect, aspect);
-    float pixel = (clamped + aspect) / (2.0f * aspect) * (float)canvasData.height;
-    return std::clamp((int)std::round(pixel), 0, canvasData.height);
-}
-
-bool BrushEngine::tileToCanvas(const glm::ivec2& tileIndex, glm::ivec4& outRect) const {
-    const int left   = tileEdgeX(tileIndex.x);
-    const int right  = tileEdgeX(tileIndex.x + 1);
-    const int bottom = tileEdgeY(tileIndex.y);
-    const int top    = tileEdgeY(tileIndex.y + 1);
-
-    outRect.x = left;
-    outRect.y = bottom;
-    outRect.z = right - left;
-    outRect.w = top - bottom;
-
-    return outRect.z > 0 && outRect.w > 0;
-}
-
-//bool BrushEngine::tileToCanvas(const glm::ivec2& tileIndex,
-//                               glm::ivec4& outRect) const {
-//    
-//    // todo: cache these values
-//    
-//    const float aspect = (float) canvasData.height / (float) canvasData.width;
-//    const float tileWorldW = 2.0f / (canvasData.width  / (float) CanvasData::TILE_WIDTH);
-//    const float tileWorldH = 2.0f * aspect / (canvasData.height / (float) CanvasData::TILE_HEIGHT);
-//    
-//    const float worldXMin = -1.0f;
-//    const float worldXMax = 1.0f;
-//    const float worldYMin = -aspect;
-//    const float worldYMax = aspect;
-//
-//    const float worldLeft = tileIndex.x * tileWorldW;
-//    const float worldRight = (tileIndex.x + 1) * tileWorldW;
-//    const float worldBottom = tileIndex.y * tileWorldH;
-//    const float worldTop = (tileIndex.y + 1) * tileWorldH;
-//
-//    if (worldRight <= worldXMin || worldLeft >= worldXMax ||
-//        worldTop <= worldYMin || worldBottom >= worldYMax) {
-//        return false;
-//    }
-//
-//    auto worldToPixelX = [&](float wx) {
-//        return (wx - worldXMin) / (worldXMax - worldXMin) * (float)canvasData.width;
-//    };
-//    auto worldToPixelY = [&](float wy) {
-//        return (wy - worldYMin) / (worldYMax - worldYMin) * (float)canvasData.height;
-//    };
-//
-//    const int pixLeft = (int)std::floor(worldToPixelX(std::max(worldLeft, worldXMin)));
-//    const int pixRight = (int)std::ceil( worldToPixelX(std::min(worldRight, worldXMax)));
-//    const int pixBottom = (int)std::floor(worldToPixelY(std::max(worldBottom, worldYMin)));
-//    const int pixTop = (int)std::ceil( worldToPixelY(std::min(worldTop, worldYMax)));
-//
-//    const int clampedLeft = std::clamp(pixLeft, 0, canvasData.width);
-//    const int clampedRight = std::clamp(pixRight, 0, canvasData.width);
-//    const int clampedBottom = std::clamp(pixBottom, 0, canvasData.height);
-//    const int clampedTop = std::clamp(pixTop, 0, canvasData.height);
-//
-//    outRect.x = clampedLeft;
-//    outRect.y = clampedBottom;
-//    outRect.z = clampedRight - clampedLeft;
-//    outRect.w = clampedTop - clampedBottom;
-//
-//    return outRect.z > 0 && outRect.w > 0;
-//    
-//}
 
 void BrushEngine::recordCommandBuffer(VkCommandBuffer& commandBuffer,
                                       glm::vec2& windowSize,
-                                      std::unordered_map<glm::ivec2, std::vector<BrushPoint>>& canvasMap) {
+                                      std::vector<Tile>& tiles) {
+    
+    qDebug() << "[brush engine] record command buffer";
+    
+    // debugging pass
+    
+    graphics->recordBeginRenderPass(commandBuffer,
+                                    stampRenderPass,
+                                    stampFrameBuffer,
+                                    canvasData.width,
+                                    canvasData.height,
+                                    debugPipeline);
+
+    graphics->recordSetViewport(commandBuffer,
+                                0.0f,
+                                0.0f,
+                                canvasData.width,
+                                canvasData.height);
+
+    graphics->recordBindDescriptorSet(commandBuffer,
+                                      debugPipelineLayout,
+                                      stampDescriptorSet);
+    
+    for (Tile& tile : tiles) {
+        
+        if (tile.dimensions.x < 0 || tile.dimensions.y < 0) continue;
+        if (tile.dimensions.x + tile.dimensions.z > canvasData.width
+            || tile.dimensions.y + tile.dimensions.w > canvasData.height) continue;
+        
+        graphics->recordSetScissor(commandBuffer,
+                                   tile.dimensions);
+                
+        StampPushConstant pc {
+            { 0, 0 },
+            { 0, 0 },
+            { tile.debugColor.r, tile.debugColor.g, tile.debugColor.b, tile.debugColor.a } // range 0-1
+        };
+
+        graphics->recordPushConstant(commandBuffer,
+                                     stampPipelineLayout,
+                                     sizeof(pc),
+                                     &pc);
+
+        graphics->recordDraw(commandBuffer);
+        
+    }
+
+    graphics->recordEndRenderPass(commandBuffer);
+    
+    // ---
+    
+    // normal pass
     
     graphics->recordBeginRenderPass(commandBuffer,
                                     stampRenderPass,
@@ -332,40 +397,41 @@ void BrushEngine::recordCommandBuffer(VkCommandBuffer& commandBuffer,
                                       stampPipelineLayout,
                                       stampDescriptorSet);
     
-    for (auto& it : canvasMap) {
-        
-        glm::ivec4 rect;
-        
-        if (!tileToCanvas(it.first, rect)) continue; // out of bounds
-                                
-        graphics->recordSetScissor(commandBuffer,
-                                   rect.x,
-                                   rect.y,
-                                   rect.z,
-                                   rect.w);
+    for (Tile& tile : tiles) {
 
-        for (BrushPoint& brushPoint : it.second) {
-            
+//        graphics->recordSetScissor(commandBuffer,
+//                                   tile.dimensions);
+        
+        graphics->recordSetScissor(commandBuffer,
+                                   0.0f,
+                                   0.0f,
+                                   canvasData.width,
+                                   canvasData.height);
+        
+        for (BrushPoint& brushPoint : tile.brushPoints) {
+                                    
             StampPushConstant pc {
                 { brushPoint.position.x, brushPoint.position.y },
                 { brushPoint.size.x, brushPoint.size.y * canvasData.aspect }, // note: account for canvas size
                 { brushPoint.color.r, brushPoint.color.g, brushPoint.color.b, brushPoint.color.a } // range 0-1
             };
-
+            
             graphics->recordPushConstant(commandBuffer,
                                          stampPipelineLayout,
                                          sizeof(pc),
                                          &pc);
-
+            
             graphics->recordDraw(commandBuffer);
-
+            
         }
-        
+    
     }
 
     graphics->recordEndRenderPass(commandBuffer);
 
 }
+
+// ---
 
 void BrushEngine::cleanup() {
     
@@ -378,6 +444,11 @@ void BrushEngine::cleanup() {
     for (auto& im : imageMemories) {
         graphics->destroyVkDeviceMemory(im);
     }
+    
+    // debugging
+    
+    graphics->destroyPipeline(debugPipeline);
+    graphics->destroyPipelineLayout(debugPipelineLayout);
     
     graphics->destroyPipeline(stampPipeline);
     graphics->destroyPipelineLayout(stampPipelineLayout);

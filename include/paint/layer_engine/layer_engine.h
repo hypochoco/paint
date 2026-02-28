@@ -28,16 +28,25 @@ public:
                              std::vector<glm::ivec4>& tiles,
                              std::vector<VkDescriptorSet>& descriptorSets);
     void cleanup();
+    
+    // debugging
+    
+    VkFramebuffer layerFrameBuffer;
         
 private:
     Graphics* graphics;
     int canvasWidth, canvasHeight;
     
     VkRenderPass layerRenderPass;
-    VkFramebuffer layerFrameBuffer;
+//    VkFramebuffer layerFrameBuffer;
     VkDescriptorSetLayout layerDescriptorSetLayout;
     VkDescriptorPool layerDescriptorPool;
     VkPipeline layerPipeline;
     VkPipelineLayout layerPipelineLayout;
+    
+    // debugging
+    
+    VkPipeline debuggingLayerPipeline;
+    VkPipelineLayout debuggingLayerPipelineLayout;
 
 };

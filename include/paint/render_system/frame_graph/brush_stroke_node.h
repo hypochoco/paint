@@ -11,10 +11,10 @@
 #include "paint/tool_system/actions/brush_stroke_data.h"
 
 #include "paint/render_system/render_worker.h"
+#include "paint/render_system/tile.h"
 
 struct BrushStrokeNode : public Node {
-    std::unordered_map<glm::ivec2, std::vector<BrushPoint>> canvasMap;
-    BrushStrokeNode(std::unordered_map<glm::ivec2, std::vector<BrushPoint>> canvasMap)
-    : canvasMap(canvasMap) {}
+    std::vector<Tile> tiles;
+    BrushStrokeNode(std::vector<Tile> tiles) : tiles(tiles) {}
     void process(FrameGraph& frameGraph, RenderWorker& renderWorker) override;
 };

@@ -1,5 +1,5 @@
 //
-//  layer_shader.vert
+//  flat_shader.vert
 //  engine
 //
 //  Created by Daniel Cho on 12/11/25.
