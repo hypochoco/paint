@@ -18,8 +18,6 @@ struct CanvasData {
     int width, height;
     float aspect;
     
-    
-    
     std::vector<Layer> layers;
 };
 

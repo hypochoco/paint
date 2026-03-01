@@ -21,9 +21,10 @@ layout(location = 1) in vec2 inUV;
 layout(location = 0) out vec4 outColor;
 
 void main() {
-//    float mask = texture(brushTex, inUV).r; // uniform image format stored in r
-//    outColor = vec4(pc.color.rgb, pc.color.a * mask);
     
-    outColor = pc.color; // temp
-
+//    outColor = pc.color; // debug
+    
+    float mask = texture(brushTex, inUV).r; // uniform image format stored in r
+    outColor = vec4(pc.color.rgb, pc.color.a * mask);
+    
 }

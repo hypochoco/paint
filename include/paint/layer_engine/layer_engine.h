@@ -29,25 +29,27 @@ public:
                              std::vector<Tile>& tiles,
                              std::vector<VkDescriptorSet>& descriptorSets);
     void cleanup();
-    
-    // debugging
-    
-    VkFramebuffer layerFrameBuffer;
-        
+            
 private:
     Graphics* graphics;
     int canvasWidth, canvasHeight;
     
     VkRenderPass layerRenderPass;
-//    VkFramebuffer layerFrameBuffer;
+    VkFramebuffer layerFrameBuffer;
     VkDescriptorSetLayout layerDescriptorSetLayout;
     VkDescriptorPool layerDescriptorPool;
     VkPipeline layerPipeline;
     VkPipelineLayout layerPipelineLayout;
     
-    // debugging
+    bool debug = false;
     
-    VkPipeline debuggingLayerPipeline;
-    VkPipelineLayout debuggingLayerPipelineLayout;
+    VkPipeline debugLayerPipeline;
+    VkPipelineLayout debugLayerPipelineLayout;
+    
+    void debugInit();
+    void debugRecordCommandBuffer(VkCommandBuffer& commandBuffer,
+                                  std::vector<Tile>& tiles,
+                                  std::vector<VkDescriptorSet>& descriptorSets);
+    void debugCleanup();
 
 };

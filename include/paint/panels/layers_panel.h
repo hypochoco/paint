@@ -73,6 +73,10 @@ private slots:
         emit signalRowsMoved(start, destinationRow);
     }
     
+    void onVisibilityChanged(bool visibility) {
+        qDebug() << "[layer panel] visibility changed";
+    }
+    
 signals:
     void dirty();
     void signalSync(std::function<void(std::string)> reply);
@@ -150,6 +154,10 @@ private:
     void addLayerItem(const QString& name) {
         auto* item = new QListWidgetItem;
         item->setSizeHint(QSize(0, 24));
+        
+        // todo: connect visibility signal
+        
+        
         
         m_layerList->addItem(item);
         m_layerList->setItemWidget(item, createLayerWidget(name)); // automatically parented

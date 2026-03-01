@@ -32,7 +32,6 @@ public:
     void calculateTiles(std::vector<BrushPoint>& brushPoints,
                         std::vector<Tile>& tiles);
     void recordCommandBuffer(VkCommandBuffer& commandBuffer,
-                             glm::vec2& windowSize,
                              std::vector<Tile>& tiles);
     void cleanup();
         
@@ -57,5 +56,12 @@ private:
     std::vector<VkDeviceMemory> imageMemories;
     
     void loadBrushes();
+    
+    bool debug = false;
+    
+    void debugInit(VkPushConstantRange& pushConstantRange);
+    void debugRecordCommandBuffer(VkCommandBuffer& commandBuffer,
+                                  std::vector<Tile>& tiles);
+    void debugCleanup();
     
 };

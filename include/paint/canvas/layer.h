@@ -15,6 +15,8 @@ struct Layer {
     uint32_t id = nextId++;
     std::string name;
     
+    bool visible = true;
+    
     VkImage image{};
     VkDeviceMemory imageMemory{};
     VkImageView imageView{};

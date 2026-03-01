@@ -39,6 +39,43 @@ void BrushEngine::loadBrushes() {
 
 }
 
+void BrushEngine::debugInit(VkPushConstantRange& pushConstantRange) {
+        
+    auto debugVertShaderCode = Graphics::readFile(resolveBundlePath("debug_vert.spv"));
+    auto debugFragShaderCode = Graphics::readFile(resolveBundlePath("debug_frag.spv"));
+
+    VkShaderModule debugVertShaderModule = graphics->createShaderModule(debugVertShaderCode);
+    VkShaderModule debugFragShaderModule = graphics->createShaderModule(debugFragShaderCode);
+
+    VkPipelineShaderStageCreateInfo debugVertShaderStageInfo{};
+    debugVertShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+    debugVertShaderStageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
+    debugVertShaderStageInfo.module = debugVertShaderModule;
+    debugVertShaderStageInfo.pName = "main";
+
+    VkPipelineShaderStageCreateInfo debugFragShaderStageInfo{};
+    debugFragShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+    debugFragShaderStageInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+    debugFragShaderStageInfo.module = debugFragShaderModule;
+    debugFragShaderStageInfo.pName = "main";
+
+    VkPipelineShaderStageCreateInfo debugShaderStages[] = {
+        debugVertShaderStageInfo,
+        debugFragShaderStageInfo
+    };
+
+    graphics->createPipeline(debugPipeline,
+                             stampDescriptorSetLayout,
+                             debugPipelineLayout,
+                             stampRenderPass,
+                             debugShaderStages,
+                             pushConstantRange);
+
+    graphics->destroyShaderModule(debugVertShaderModule);
+    graphics->destroyShaderModule(debugFragShaderModule);
+
+}
+
 void BrushEngine::init() {
     
     graphics->createRenderPass(stampRenderPass,
@@ -82,44 +119,7 @@ void BrushEngine::init() {
     graphics->destroyShaderModule(stampVertShaderModule);
     graphics->destroyShaderModule(stampFragShaderModule);
     
-    // ---
-    
-    // debugging
-    
-    auto debugVertShaderCode = Graphics::readFile(resolveBundlePath("debug_vert.spv"));
-    auto debugFragShaderCode = Graphics::readFile(resolveBundlePath("debug_frag.spv"));
-
-    VkShaderModule debugVertShaderModule = graphics->createShaderModule(debugVertShaderCode);
-    VkShaderModule debugFragShaderModule = graphics->createShaderModule(debugFragShaderCode);
-
-    VkPipelineShaderStageCreateInfo debugVertShaderStageInfo{};
-    debugVertShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-    debugVertShaderStageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
-    debugVertShaderStageInfo.module = debugVertShaderModule;
-    debugVertShaderStageInfo.pName = "main";
-
-    VkPipelineShaderStageCreateInfo debugFragShaderStageInfo{};
-    debugFragShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-    debugFragShaderStageInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-    debugFragShaderStageInfo.module = debugFragShaderModule;
-    debugFragShaderStageInfo.pName = "main";
-
-    VkPipelineShaderStageCreateInfo debugShaderStages[] = {
-        debugVertShaderStageInfo,
-        debugFragShaderStageInfo
-    };
-
-    graphics->createPipeline(debugPipeline,
-                             stampDescriptorSetLayout,
-                             debugPipelineLayout,
-                             stampRenderPass,
-                             debugShaderStages,
-                             pushConstantRange);
-
-    graphics->destroyShaderModule(debugVertShaderModule);
-    graphics->destroyShaderModule(debugFragShaderModule);
-    
-    // ---
+    if (debug) debugInit(pushConstantRange);
     
     loadBrushes();
     
@@ -224,10 +224,6 @@ std::vector<BrushPoint> BrushEngine::interpolate(Camera& camera,
     return stamps;
 }
 
-// ---
-
-// debugging
-
 void BrushEngine::calculateTiles(std::vector<BrushPoint>& brushPoints,
                                  std::vector<Tile>& tiles) {
 
@@ -325,13 +321,8 @@ void BrushEngine::calculateTiles(std::vector<BrushPoint>& brushPoints,
     
 }
 
-void BrushEngine::recordCommandBuffer(VkCommandBuffer& commandBuffer,
-                                      glm::vec2& windowSize,
-                                      std::vector<Tile>& tiles) {
-    
-    qDebug() << "[brush engine] record command buffer";
-    
-    // debugging pass
+void BrushEngine::debugRecordCommandBuffer(VkCommandBuffer& commandBuffer,
+                                           std::vector<Tile>& tiles) {
     
     graphics->recordBeginRenderPass(commandBuffer,
                                     stampRenderPass,
@@ -375,11 +366,14 @@ void BrushEngine::recordCommandBuffer(VkCommandBuffer& commandBuffer,
     }
 
     graphics->recordEndRenderPass(commandBuffer);
-    
-    // ---
-    
-    // normal pass
-    
+
+}
+
+void BrushEngine::recordCommandBuffer(VkCommandBuffer& commandBuffer,
+                                      std::vector<Tile>& tiles) {
+
+    if (debug) debugRecordCommandBuffer(commandBuffer, tiles);
+
     graphics->recordBeginRenderPass(commandBuffer,
                                     stampRenderPass,
                                     stampFrameBuffer,
@@ -399,14 +393,14 @@ void BrushEngine::recordCommandBuffer(VkCommandBuffer& commandBuffer,
     
     for (Tile& tile : tiles) {
 
-//        graphics->recordSetScissor(commandBuffer,
-//                                   tile.dimensions);
-        
         graphics->recordSetScissor(commandBuffer,
-                                   0.0f,
-                                   0.0f,
-                                   canvasData.width,
-                                   canvasData.height);
+                                   tile.dimensions);
+        
+//        graphics->recordSetScissor(commandBuffer,
+//                                   0.0f,
+//                                   0.0f,
+//                                   canvasData.width,
+//                                   canvasData.height);
         
         for (BrushPoint& brushPoint : tile.brushPoints) {
                                     
@@ -431,7 +425,12 @@ void BrushEngine::recordCommandBuffer(VkCommandBuffer& commandBuffer,
 
 }
 
-// ---
+void BrushEngine::debugCleanup() {
+    
+    graphics->destroyPipeline(debugPipeline);
+    graphics->destroyPipelineLayout(debugPipelineLayout);
+    
+}
 
 void BrushEngine::cleanup() {
     
@@ -444,11 +443,8 @@ void BrushEngine::cleanup() {
     for (auto& im : imageMemories) {
         graphics->destroyVkDeviceMemory(im);
     }
-    
-    // debugging
-    
-    graphics->destroyPipeline(debugPipeline);
-    graphics->destroyPipelineLayout(debugPipelineLayout);
+        
+    if (debug) debugCleanup();
     
     graphics->destroyPipeline(stampPipeline);
     graphics->destroyPipelineLayout(stampPipelineLayout);

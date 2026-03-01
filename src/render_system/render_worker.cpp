@@ -15,7 +15,7 @@ void RenderWorker::buildBrushStrokeNode(FrameGraph& frameGraph, BrushStrokeData&
         
     // note: without caching 0-3 ms, with caching 0 ms
     
-    // todo: throw an error if selected layer is not visible
+    // todo: throw an error if selected layer is not visible / group of layers selected 
     // todo: optimize by grouping everything under the same layer if all drawn
 
     brushEngine->setCanvasData(frameGraph.canvasData);
@@ -41,36 +41,10 @@ void RenderWorker::buildBrushStrokeNode(FrameGraph& frameGraph, BrushStrokeData&
     BrushStrokeNode* brushStrokeNode = new BrushStrokeNode { tiles };
     
     LayerNode* layerNode = new LayerNode { tiles };
-//    LayerNode* layerNode = new LayerNode;
     
     layerNode->children.push_back(brushStrokeNode);
     frameGraph.root->children.push_back(layerNode);
-    
-//    // ---
-//    
-//    // debug
-//        
-//    qDebug() << "[render worker] building brush stroke node";
-//    
-//    brushEngine->setCanvasData(frameGraph.canvasData);
-//    brushEngine->setTarget(layerEngine->layerFrameBuffer);
-//    
-//    std::vector<BrushPoint> brushPoints =
-//        brushEngine->interpolate(frameGraph.camera,
-//                                 frameGraph.windowSize,
-//                                 brushStrokeData,
-//                                 actionDataCache->getBrushStrokeDataCache(brushStrokeData.id));
-//    
-//    if (brushPoints.size() == 0) return;
-//        
-//    std::vector<Tile> tiles;
-//    brushEngine->calculateTiles(brushPoints, tiles);
-//    BrushStrokeNode* brushStrokeNode = new BrushStrokeNode { tiles };
-//        
-//    frameGraph.root->children.push_back(brushStrokeNode);
-//    
-//    // ---
-    
+        
 }
 
 // ---
@@ -88,7 +62,6 @@ void RenderWorker::processBrushStrokeNode(FrameGraph& frameGraph, BrushStrokeNod
     qDebug() << "[render worker] processing brush stroke node";
     
     brushEngine->recordCommandBuffer(graphics->commandBuffers[frameGraph.currentFrame],
-                                     frameGraph.windowSize,
                                      brushStrokeNode.tiles);
         
     // note: barrier to ensure all draw calls completed
@@ -105,6 +78,7 @@ void RenderWorker::processLayerNode(FrameGraph& frameGraph, LayerNode& layerNode
     std::vector<VkDescriptorSet> descriptorSets;
     for (int i = 0; i < frameGraph.canvasData.layers.size(); i++) {
         Layer& layer = frameGraph.canvasData.layers[i];
+        if (!layer.visible) continue;
         if (descriptorSetMap.find(layer.id) == descriptorSetMap.end()) { // todo: move to build
             VkDescriptorSet descriptorSet;
             layerEngine->createDescriptorSet(layer.imageView, descriptorSet);
@@ -122,6 +96,8 @@ void RenderWorker::processLayerNode(FrameGraph& frameGraph, LayerNode& layerNode
                                          descriptorSets);
     }
     
+    // note: barrier to ensure all draw calls completed
+        
     graphics->transitionCanvasToShaderRead(frameGraph.currentFrame,
                                            graphics->textureImages[0]); // temp: canvas image
     
