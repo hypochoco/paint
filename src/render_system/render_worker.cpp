@@ -18,46 +18,15 @@ void RenderWorker::buildBrushStrokeNode(FrameGraph& frameGraph, BrushStrokeData&
     // todo: throw an error if selected layer is not visible
     // todo: optimize by grouping everything under the same layer if all drawn
 
-//    brushEngine->setCanvasData(frameGraph.canvasData);
-//    
-//    Layer& selectedLayer = frameGraph.canvasData.layers[brushStrokeData.selectedLayer];
-//    if (frameBufferMap.find(selectedLayer.id) == frameBufferMap.end()) {
-//        VkFramebuffer frameBuffer;
-//        brushEngine->createFrameBuffer(selectedLayer.imageView, frameBuffer);
-//        frameBufferMap[selectedLayer.id] = frameBuffer;
-//    }
-//    brushEngine->setTarget(frameBufferMap[selectedLayer.id]);
-//    
-//    std::vector<BrushPoint> brushPoints =
-//        brushEngine->interpolate(frameGraph.camera,
-//                                 frameGraph.windowSize,
-//                                 brushStrokeData,
-//                                 actionDataCache->getBrushStrokeDataCache(brushStrokeData.id));
-//    
-//    if (brushPoints.size() == 0) return;
-//    
-//    // ---
-//    
-//    // debugging
-//    
-//    std::vector<Tile> tiles;
-//    brushEngine->calculateTiles(brushPoints, tiles);
-//    BrushStrokeNode* brushStrokeNode = new BrushStrokeNode { tiles };
-//    
-////    LayerNode* layerNode = new LayerNode { tiles };
-//    LayerNode* layerNode = new LayerNode;
-//    
-//    layerNode->children.push_back(brushStrokeNode);
-//    frameGraph.root->children.push_back(layerNode);
-    
-    // ---
-    
-    // full debugging
-    
-    // note: no layer engine, get tiling in the brush engine right
-
     brushEngine->setCanvasData(frameGraph.canvasData);
-    brushEngine->setTarget(layerEngine->layerFrameBuffer);
+    
+    Layer& selectedLayer = frameGraph.canvasData.layers[brushStrokeData.selectedLayer];
+    if (frameBufferMap.find(selectedLayer.id) == frameBufferMap.end()) {
+        VkFramebuffer frameBuffer;
+        brushEngine->createFrameBuffer(selectedLayer.imageView, frameBuffer);
+        frameBufferMap[selectedLayer.id] = frameBuffer;
+    }
+    brushEngine->setTarget(frameBufferMap[selectedLayer.id]);
     
     std::vector<BrushPoint> brushPoints =
         brushEngine->interpolate(frameGraph.camera,
@@ -66,14 +35,41 @@ void RenderWorker::buildBrushStrokeNode(FrameGraph& frameGraph, BrushStrokeData&
                                  actionDataCache->getBrushStrokeDataCache(brushStrokeData.id));
     
     if (brushPoints.size() == 0) return;
-    
+        
     std::vector<Tile> tiles;
     brushEngine->calculateTiles(brushPoints, tiles);
     BrushStrokeNode* brushStrokeNode = new BrushStrokeNode { tiles };
     
-    frameGraph.root->children.push_back(brushStrokeNode);
-
-    // ---
+    LayerNode* layerNode = new LayerNode { tiles };
+//    LayerNode* layerNode = new LayerNode;
+    
+    layerNode->children.push_back(brushStrokeNode);
+    frameGraph.root->children.push_back(layerNode);
+    
+//    // ---
+//    
+//    // debug
+//        
+//    qDebug() << "[render worker] building brush stroke node";
+//    
+//    brushEngine->setCanvasData(frameGraph.canvasData);
+//    brushEngine->setTarget(layerEngine->layerFrameBuffer);
+//    
+//    std::vector<BrushPoint> brushPoints =
+//        brushEngine->interpolate(frameGraph.camera,
+//                                 frameGraph.windowSize,
+//                                 brushStrokeData,
+//                                 actionDataCache->getBrushStrokeDataCache(brushStrokeData.id));
+//    
+//    if (brushPoints.size() == 0) return;
+//        
+//    std::vector<Tile> tiles;
+//    brushEngine->calculateTiles(brushPoints, tiles);
+//    BrushStrokeNode* brushStrokeNode = new BrushStrokeNode { tiles };
+//        
+//    frameGraph.root->children.push_back(brushStrokeNode);
+//    
+//    // ---
     
 }
 
@@ -95,6 +91,11 @@ void RenderWorker::processBrushStrokeNode(FrameGraph& frameGraph, BrushStrokeNod
                                      frameGraph.windowSize,
                                      brushStrokeNode.tiles);
         
+    // note: barrier to ensure all draw calls completed
+    
+    graphics->transitionCanvasToShaderRead(frameGraph.currentFrame,
+                                           graphics->textureImages[0]); // temp: canvas image
+    
 }
 
 void RenderWorker::processLayerNode(FrameGraph& frameGraph, LayerNode& layerNode) {
@@ -121,6 +122,9 @@ void RenderWorker::processLayerNode(FrameGraph& frameGraph, LayerNode& layerNode
                                          descriptorSets);
     }
     
+    graphics->transitionCanvasToShaderRead(frameGraph.currentFrame,
+                                           graphics->textureImages[0]); // temp: canvas image
+    
 }
 
 // --- 
@@ -135,8 +139,9 @@ void RenderWorker::onQueueFrame(FrameGraph frameGraph) {
     graphics->beginCommandBuffer(frameGraph.currentFrame);
     
     dfs(frameGraph.root, [&frameGraph, this](Node* node) { node->process(frameGraph, *this); });
-    
-    graphics->recordSwapChainCommandBuffer(frameGraph.currentFrame);
+        
+    graphics->recordSwapChainCommandBuffer(frameGraph.currentFrame,
+                                           frameGraph.imageIndex);
     graphics->endCommandBuffer(frameGraph.currentFrame);
     
     frameGraph.cleanup();

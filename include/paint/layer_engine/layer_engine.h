@@ -10,6 +10,7 @@
 #include <engine/graphics/graphics.h>
 
 #include "paint/canvas/canvas_data.h"
+#include "paint/render_system/tile.h"
 
 class LayerEngine {
     
@@ -25,7 +26,7 @@ public:
     void recordCommandBuffer(VkCommandBuffer& commandBuffer,
                              std::vector<VkDescriptorSet>& descriptorSets);
     void recordCommandBuffer(VkCommandBuffer& commandBuffer,
-                             std::vector<glm::ivec4>& tiles,
+                             std::vector<Tile>& tiles,
                              std::vector<VkDescriptorSet>& descriptorSets);
     void cleanup();
     

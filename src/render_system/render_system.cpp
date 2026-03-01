@@ -92,7 +92,7 @@ void RenderSystem::initCanvas() {
     
     float aspect = canvasData->width / (float) canvasData->height;
 
-    graphics->createTexture(canvasData->width, // swapchain texture
+    graphics->createTexture(canvasData->width,
                             canvasData->height,
                             glm::ivec4(0, 0, 0, 0),
                             VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT

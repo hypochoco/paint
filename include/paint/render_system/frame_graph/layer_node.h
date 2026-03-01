@@ -10,10 +10,11 @@
 #include "paint/render_system/frame_graph/node.h"
 
 #include "paint/render_system/render_worker.h"
+#include "paint/render_system/tile.h"
 
 struct LayerNode : public Node {
-    std::vector<glm::ivec4> tiles;
+    std::vector<Tile> tiles;
     LayerNode() {}
-    LayerNode(std::vector<glm::ivec4> tiles) : tiles(tiles) {}
+    LayerNode(std::vector<Tile> tiles) : tiles(tiles) {}
     void process(FrameGraph& frameGraph, RenderWorker& renderWorker) override;
 };

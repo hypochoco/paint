@@ -156,7 +156,7 @@ void LayerEngine::recordCommandBuffer(VkCommandBuffer& commandBuffer,
 }
 
 void LayerEngine::recordCommandBuffer(VkCommandBuffer& commandBuffer,
-                                      std::vector<glm::ivec4>& tiles,
+                                      std::vector<Tile>& tiles,
                                       std::vector<VkDescriptorSet>& descriptorSets) {
     
     qDebug() << "[layer engine] tile record command buffer";
@@ -174,10 +174,10 @@ void LayerEngine::recordCommandBuffer(VkCommandBuffer& commandBuffer,
                                 canvasWidth,
                                 canvasHeight);
     
-    for (glm::ivec4 tile : tiles) { // clear dirty tiles
+    for (Tile& tile : tiles) { // clear dirty tiles
         // note: separate to portect against overlap flickers
-        graphics->recordSetScissor(commandBuffer, tile);
-        graphics->recordClearAttachment(commandBuffer, tile);
+        graphics->recordSetScissor(commandBuffer, tile.dimensions);
+        graphics->recordClearAttachment(commandBuffer, tile.dimensions);
     }
     
     for (VkDescriptorSet& descriptorSet : descriptorSets) {
@@ -185,8 +185,8 @@ void LayerEngine::recordCommandBuffer(VkCommandBuffer& commandBuffer,
         graphics->recordBindDescriptorSet(commandBuffer,
                                           layerPipelineLayout,
                                           descriptorSet);
-        for (glm::ivec4 tile : tiles) {
-            graphics->recordSetScissor(commandBuffer, tile);
+        for (Tile& tile : tiles) {
+            graphics->recordSetScissor(commandBuffer, tile.dimensions);
             graphics->recordDraw(commandBuffer);
         }
     }
