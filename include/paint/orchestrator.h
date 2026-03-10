@@ -16,6 +16,7 @@
 #include "paint/render_system/render_system.h"
 #include "paint/tool_system/tool_system.h"
 #include "paint/main_window.h"
+#include "paint/panels/message_panel.h"
 
 class Orchestrator : public QObject {
     Q_OBJECT
@@ -107,6 +108,7 @@ public:
         
         connect(this, &Orchestrator::brushColor,
                 mainWindow->colorsPanel, &ColorsPanel::onColor);
+        
     }
         
 public slots:
@@ -143,6 +145,10 @@ public slots:
     
     void onUpdateCamera(glm::vec3 delta) {
         emit updateCamera(delta);
+    }
+    
+    void onInfoMessage(std::string) {
+        QMessageBox::information(mainWindow, "Info", "testing message");
     }
     
     void onQuerySelectedLayer(std::function<void(int)> reply) {

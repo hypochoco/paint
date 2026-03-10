@@ -35,6 +35,9 @@ public:
     LayersPanel* layersPanel;
     QDockWidget* layersDock;
     
+    LayersTreePanel* layersTreePanel;
+    QDockWidget* layersTreeDock;
+    
     BrushesPanel* brushesPanel;
     QDockWidget* brushesDock;
 

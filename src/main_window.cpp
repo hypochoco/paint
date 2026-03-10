@@ -81,7 +81,7 @@ void MainWindow::createDockPanels() {
 //    colorsDock->setFeatures(colorsDock->features() & ~QDockWidget::DockWidgetClosable);
     addDockWidget(Qt::RightDockWidgetArea, colorsDock);
     
-    // layer panel
+    // layers panel
     
     layersPanel = new LayersPanel(this);
     layersDock = new QDockWidget("Layers", this);
@@ -89,6 +89,14 @@ void MainWindow::createDockPanels() {
     layersDock->setMinimumWidth(100);
     addDockWidget(Qt::RightDockWidgetArea, layersDock);
     
+    // layers tree panel
+    
+    layersTreePanel = new LayersTreePanel(this);
+    layersTreeDock = new QDockWidget("Layers", this);
+    layersTreeDock->setWidget(layersTreePanel);
+    layersTreeDock->setMinimumWidth(100);
+    layersTreeDock->setFloating(true);
+
     // brushes panel
     
     brushesPanel = new BrushesPanel(this);

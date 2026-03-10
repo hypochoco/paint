@@ -3,9 +3,12 @@
 
 Painting application:
 
+- [ ] Target under 200mb idle
 - [ ] Bug: Culling distance on zoom
 
 --- 
+
+- [ ] Command pallete like and IDe
 
 - [ ] Layer tree structure
 - [ ] Layer visibility 
