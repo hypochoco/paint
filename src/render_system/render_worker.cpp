@@ -83,6 +83,12 @@ void RenderWorker::processLayerNode(FrameGraph& frameGraph, LayerNode& layerNode
             VkDescriptorSet descriptorSet;
             layerEngine->createDescriptorSet(layer.imageView, descriptorSet);
             descriptorSetMap[layer.id] = descriptorSet;
+            
+            // todo: store descriptor set in the layer ?
+            // then we don't even need an id
+            
+            // but we have to be better about deleting this ...
+            
         }
         descriptorSets.push_back(descriptorSetMap[layer.id]);
     }

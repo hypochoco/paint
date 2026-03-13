@@ -28,11 +28,16 @@
 
 #include <limits>
 
-// todo: connect layer opacity internally
 // todo: connect everything externally
     // dirty flags? vector representation? etc.
 // todo: undo wrappers
-// todo: cleanup code
+
+// ---
+
+// todo: open any number of canvas's, drawing a blank canvas
+// todo: saving an image (pdf + jpg)
+
+// todo: that should be the MVP, then it's adding features, cleaning up (keep under 200mb idle), etc.
 
 enum class LayerType {
     Raster,
@@ -47,6 +52,29 @@ enum class BlendMode {
     Screen,
     Overlay,
 };
+
+inline QString toString(BlendMode blendMode) {
+    switch(blendMode) {
+        case BlendMode::Normal:
+            return "Normal";
+        case BlendMode::Multiply:
+            return "Multiply";
+        default:
+            return "Normal";
+    }
+}
+
+inline BlendMode toBlendMode(QString blendMode) {
+    static QHash<QString, BlendMode> stringToBlendModeMap {
+        {"Normal", BlendMode::Normal},
+        {"Multiply", BlendMode::Multiply},
+    };
+    if (stringToBlendModeMap.contains(blendMode)) {
+        return stringToBlendModeMap[blendMode];
+    } else {
+        return BlendMode::Normal;
+    }
+}
 
 struct LayerDataNode {
 
@@ -245,7 +273,7 @@ public:
                 return true;
             }
 //            case LockedRole:         return node->locked;
-//            case OpacityRole:        return node->opacity;
+            case OpacityRole:        return node->opacity;
             case BlendModeRole:      return static_cast<int>(node->blendMode);
 //            case ThumbnailRole:      return node->thumbnail;
             case LayerTypeRole: return static_cast<int>(node->type);
@@ -276,10 +304,18 @@ public:
                 node->name = value.toString();
                 emit dataChanged(index, index, {role});
                 return true;
+            case OpacityRole:
+                node->opacity = value.toFloat();
+                emit dataChanged(index, index, {role});
+                return true;
             case VisibleRole:
                 node->visible = value.toBool();
                 notifySubtreeChanged(index);
-                break;
+                return true;
+            case BlendModeRole:
+                node->blendMode = toBlendMode(value.toString());
+                emit dataChanged(index, index, {role});
+                return true;
             default:
                 return false;
         }
@@ -534,6 +570,7 @@ private:
 
 class LayersTreeView : public QTreeView {
     Q_OBJECT
+    
 public:
     explicit LayersTreeView(QWidget* parent = nullptr) : QTreeView(parent) {}
 
@@ -558,6 +595,16 @@ protected:
             expand(dropTarget);
         }
     }
+    
+    void selectionChanged(const QItemSelection &selected, const QItemSelection &deselected) override {
+        QTreeView::selectionChanged(selected, deselected);
+        emit signalSelectionChanged();
+        return;
+    }
+    
+signals:
+    void signalSelectionChanged();
+    
 };
 
 class LayersTreePanel : public QWidget {
@@ -599,15 +646,29 @@ public:
         
         // menu
         
+        // todo: connect these menu items with the selected layer
+                
         blendModeDropdown = new QComboBox(this);
-        blendModeDropdown->addItem("Normal");
-        blendModeDropdown->addItem("Test");
+        blendModeDropdown->addItem(toString(BlendMode::Normal));
+        blendModeDropdown->addItem(toString(BlendMode::Multiply));
         
-        // todo: connect this with the layer
+        // todo: mapping between values, ints, etc.
         
+        blendModeDropdown->setCurrentIndex(0);
+                
         connect(blendModeDropdown, &QComboBox::currentTextChanged,
                 this, [this](const QString& value) {
+            
             qDebug() << "[layers tree panel] blend mode changed " << value;
+            
+            QModelIndexList selected = view->selectionModel()->selectedIndexes();
+            
+            if (selected.size() != 1) return;
+                        
+            model->setData(selected.first(),
+                           value,
+                           LayerModel::BlendModeRole);
+                        
         });
 
         opacityLineEdit = new QLineEdit(this);
@@ -615,29 +676,72 @@ public:
         opacityValidator->setNotation(QDoubleValidator::StandardNotation);
         opacityLineEdit->setText("1.00");
         
-        // todo: connect this with the layer
-        
         connect(opacityLineEdit, &QLineEdit::editingFinished,
                 this, [this](){
-            
-            qDebug() << "[layers tree panel] opacity changed " << opacityLineEdit->text();
-            
+        
             int pos = 0;
             QString value = opacityLineEdit->text();
+            QModelIndexList selected = view->selectionModel()->selectedIndexes();
+            
+            if (selected.size() != 1) return; // invalid selection
+            
             if (opacityValidator->validate(value, pos) == QValidator::Acceptable) {
+                
+                qDebug() << "[layers tree panel] opacity valid";
+                
                 float opacity = value.toFloat();
+                opacityLineEdit->setText(QString::number(opacity, 'f', 2));
                 opacityLineEdit->deselect();
                 opacityLineEdit->clearFocus();
-                qDebug() << "[layers tree panel] opacity valid";
-            } else {
+                
+                model->setData(selected.first(),
+                               opacity,
+                               LayerModel::OpacityRole);
+                
+                setDirtyFlag(true);
+                
+            } else { // invalid value
                 // todo: popup on why this is invalid
                 // todo: restore previous value
-                opacityLineEdit->setText("1.00");
                 qDebug() << "[layers tree panel] opacity invalid";
+                opacityLineEdit->setText("1.00");
             }
 
         });
+        
+        // start disabled
+        
+        blendModeDropdown->setDisabled(true);
+        opacityLineEdit->setDisabled(true);
+        
+        connect(view, &LayersTreeView::signalSelectionChanged,
+                this, [this]() {
+            
+            qDebug() << "[layers tree panel] selection changed";
+            
+            QModelIndexList selected = view->selectionModel()->selectedIndexes();
+            
+            if (selected.size() != 1) { // disable if num layer is != 1
+                blendModeDropdown->setDisabled(true);
+                opacityLineEdit->setDisabled(true);
+                
+                // todo: placeholder values
 
+            } else {
+                blendModeDropdown->setDisabled(false);
+                opacityLineEdit->setDisabled(false);
+                                
+                int blendMode = model->data(selected.first(),
+                                            LayerModel::BlendModeRole).toInt();
+                float opacity = model->data(selected.first(),
+                                            LayerModel::OpacityRole).toFloat();
+                blendModeDropdown->setCurrentIndex(blendMode);
+                opacityLineEdit->setText(QString::number(opacity, 'f', 2));
+                
+            }
+
+        });
+        
         // buttons
         
         groupButton = new QToolButton(this);
@@ -728,6 +832,8 @@ public:
             view->selectionModel()->setCurrentIndex(newIdx, QItemSelectionModel::ClearAndSelect);
             view->scrollTo(newIdx);
             
+            setDirtyFlag(true);
+            
         });
 
         removeButton = new QToolButton(this);
@@ -755,10 +861,11 @@ public:
             // todo: undo stack
 //            m_undoStack->push(new AddLayerCommand(m_model, parentIdx, insertRow));
             model->removeLayer(parentIdx, selected);
+            
+            setDirtyFlag(true);
                         
         });
 
-        
         // layout
         
         auto* menuLayout = new QHBoxLayout;
@@ -780,8 +887,14 @@ public:
 
     }
     
-private slots:
-    void deselectOpacityLineEdit() {
+public slots:
+    void onQuery() { // if another service queries this panel ...
+        // return all the layers, also
+        // query dirty?
+    }
+    
+    void onSync() { // if we induct another canvas ...
+        
     }
     
 private:
@@ -790,6 +903,8 @@ private:
     LayerDelegate* delegate;
     LayerModel* model;
     QUndoStack* undoStack;
+    
+    bool dirty;
         
     QComboBox* blendModeDropdown;
 
@@ -799,8 +914,34 @@ private:
     QToolButton* groupButton;
     QToolButton* addButton;
     QToolButton* removeButton;
+    
+    void setDirtyFlag(bool flag) {
+        dirty = flag;
+    }
 
 };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 // ---
 
